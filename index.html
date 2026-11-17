@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>filter-archive</title>
+  <!-- JSZip for inspecting compressed archives (.zip, .jar, .apk, etc.) client-side -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <style>
+    :root {
+      --bg: #000000;
+      --fg: #ffffff;
+      --muted: #888888;
+      --border: 1px solid #ffffff;
+      --border-dim: 1px solid rgba(255, 255, 255, 0.35);
+      --radius-curvy: 16px;
+      --radius-sharp: 0px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--fg);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header & Search */
+    header {
+      background-color: var(--bg);
+      border-bottom: var(--border);
+      padding: 1rem 2rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .logo-group {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .logo {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: var(--fg);
+    }
+
+    .server-status {
+      font-size: 0.72rem;
+      padding: 0.25rem 0.65rem;
+      border: var(--border-dim);
+      border-radius: var(--radius-curvy);
+      color: var(--muted);
+    }
+
+    .server-status.online {
+      border-color: var(--fg);
+      color: var(--fg);
+    }
+
+    .search-wrapper {
+      flex: 1;
+      max-width: 480px;
+      position: relative;
+    }
+
+    .search-wrapper input {
+      width: 100%;
+      padding: 0.55rem 0.95rem;
+      border: var(--border);
+      border-radius: var(--radius-curvy);
+      background-color: var(--bg);
+      color: var(--fg);
+      font-size: 0.85rem;
+      outline: none;
+    }
+
+    .search-wrapper input::placeholder {
+      color: var(--muted);
+    }
+
+    .search-wrapper input:focus {
+      background-color: #0a0a0a;
+    }
+
+    /* Main Container */
+    .container {
+      max-width: 1120px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+      flex: 1;
+    }
+
+    /* Upload Zone */
+    .upload-area {
+      border: 1px dashed var(--fg);
+      border-radius: var(--radius-curvy);
+      background-color: var(--bg);
+      padding: 2rem;
+      text-align: center;
+      transition: background-color 0.15s;
+      margin-bottom: 2rem;
+    }
+
+    .upload-area.dragover {
+      background-color: #111111;
+    }
+
+    .upload-area h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .upload-area p {
+      color: var(--muted);
+      font-size: 0.82rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .upload-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 0.55rem 1.1rem;
+      border: var(--border);
+      border-radius: var(--radius-sharp);
+      background-color: var(--bg);
+      color: var(--fg);
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: background-color 0.15s, color 0.15s;
+    }
+
+    .btn:hover {
+      background-color: var(--fg);
+      color: var(--bg);
+    }
+
+    .btn:active {
+      opacity: 0.8;
+    }
+
+    .btn-curvy {
+      border-radius: var(--radius-curvy);
+    }
+
+    .btn-sm {
+      padding: 0.45rem 0.75rem;
+      font-size: 0.78rem;
+      width: 100%;
+      justify-content: center;
+      border-radius: var(--radius-curvy);
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 0.5rem;
+      border-bottom: var(--border);
+      padding-bottom: 0.75rem;
+      margin-bottom: 1.25rem;
+      overflow-x: auto;
+    }
+
+    .tab-btn {
+      background-color: var(--bg);
+      border: var(--border-dim);
+      border-radius: var(--radius-curvy);
+      color: var(--muted);
+      padding: 0.45rem 0.85rem;
+      font-size: 0.8rem;
+      cursor: pointer;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      transition: all 0.15s;
+    }
+
+    .tab-btn:hover {
+      border-color: var(--fg);
+      color: var(--fg);
+    }
+
+    .tab-btn.active {
+      background-color: var(--fg);
+      color: var(--bg);
+      border-color: var(--fg);
+      font-weight: 700;
+    }
+
+    .badge {
+      font-size: 0.72rem;
+      padding: 0.05rem 0.4rem;
+      border: 1px solid currentColor;
+      border-radius: 999px;
+    }
+
+    /* Toolbar */
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      font-size: 0.8rem;
+      color: var(--muted);
+      gap: 1rem;
+    }
+
+    /* File Grid */
+    .file-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+
+    .file-card {
+      background-color: var(--bg);
+      border: var(--border);
+      border-radius: var(--radius-curvy);
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 0.9rem;
+    }
+
+    .file-card:hover {
+      background-color: #080808;
+    }
+
+    .file-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+
+    .file-type-box {
+      border: var(--border);
+      border-radius: 6px;
+      padding: 0.3rem 0.45rem;
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+    }
+
+    .file-info {
+      overflow: hidden;
+      flex: 1;
+    }
+
+    .file-name {
+      font-weight: 600;
+      font-size: 0.88rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 0.3rem;
+    }
+
+    .file-meta {
+      font-size: 0.75rem;
+      color: var(--muted);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+    }
+
+    .match-score {
+      color: var(--fg);
+      border: var(--border-dim);
+      border-radius: 4px;
+      padding: 0.05rem 0.35rem;
+      font-size: 0.68rem;
+    }
+
+    .empty-state {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 3rem 1rem;
+      border: var(--border-dim);
+      border-radius: var(--radius-curvy);
+      color: var(--muted);
+    }
+
+    .empty-state h3 {
+      color: var(--fg);
+      font-size: 0.95rem;
+      margin-bottom: 0.35rem;
+    }
+
+    .empty-state p {
+      font-size: 0.8rem;
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo-group">
+      <div class="logo">filter-archive</div>
+      <div class="server-status" id="serverStatus">CLOUDFLARE R2: CONNECTING...</div>
+    </div>
+    <div class="search-wrapper">
+      <input
+        type="text"
+        id="searchInput"
+        placeholder="SEARCH ARCHIVE (NEAREST TO FURTHEST)..."
+        autocomplete="off"
+      />
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Upload Box -->
+    <section class="upload-area" id="dropZone">
+      <h2>Filter & Archive to Cloudflare R2</h2>
+      <p id="uploadHint">Drop files, zips, or folders. Deep inspection sorts contents automatically.</p>
+      <div class="upload-buttons">
+        <button class="btn btn-curvy" onclick="document.getElementById('fileInput').click()">
+          + UPLOAD FILES / ZIPS
+        </button>
+        <button class="btn btn-curvy" onclick="document.getElementById('folderInput').click()">
+          + UPLOAD FOLDER
+        </button>
+      </div>
+      <input type="file" id="fileInput" multiple />
+      <input type="file" id="folderInput" webkitdirectory directory multiple />
+    </section>
+
+    <!-- Navigation Tabs -->
+    <nav class="tabs" id="tabsContainer">
+      <button class="tab-btn active" data-tab="all">
+        ALL <span class="badge" id="count-all">0</span>
+      </button>
+      <button class="tab-btn" data-tab="html">
+        HTML FILES <span class="badge" id="count-html">0</span>
+      </button>
+      <button class="tab-btn" data-tab="runnable">
+        RUNNABLE <span class="badge" id="count-runnable">0</span>
+      </button>
+      <button class="tab-btn" data-tab="dll">
+        DLL <span class="badge" id="count-dll">0</span>
+      </button>
+      <button class="tab-btn" data-tab="zip">
+        ZIPS & ARCHIVES <span class="badge" id="count-zip">0</span>
+      </button>
+      <button class="tab-btn" data-tab="folder">
+        FOLDERS <span class="badge" id="count-folder">0</span>
+      </button>
+      <button class="tab-btn" data-tab="downloads">
+        DOWNLOADS <span class="badge" id="count-downloads">0</span>
+      </button>
+    </nav>
+
+    <!-- Status Bar -->
+    <div class="toolbar">
+      <span id="viewDescription">SHOWING ALL ARCHIVED FILES</span>
+      <button class="btn btn-curvy" style="padding:0.35rem 0.7rem; font-size:0.75rem;" id="clearDownloadsBtn" onclick="clearDownloadHistory()">
+        CLEAR DOWNLOAD LOG
+      </button>
+    </div>
+
+    <!-- File List -->
+    <section class="file-list" id="fileList"></section>
+  </main>
+
+  <script>
+    /**
+     * AUTO-CONNECT CONFIGURATION
+     * Since this index.html is hosted on GitHub Pages, we automatically point 
+     * requests to the current page origin or your deployed Cloudflare Worker domain.
+     * By default, `window.location.origin` automatically routes API requests 
+     * straight to your Cloudflare Worker / Custom Domain without any manual typing!
+     */
+    const CLOUDFLARE_URL = window.location.origin.includes("github.io") 
+      ? "https://filter-archive.YOUR-SUBDOMAIN.workers.dev" // Replace with your Worker URL if strictly hosting static GitHub Pages
+      : window.location.origin; // Automatically connects when hosted directly on Cloudflare Workers / Pages
+
+    let storedItems = [];
+    let downloadHistory = JSON.parse(localStorage.getItem("fa_downloads") || "[]");
+    let activeTab = "all";
+    let searchQuery = "";
+    let db = null;
+
+    const HTML_EXTS = ["html", "htm", "xhtml", "txt"];
+    const RUNNABLE_EXTS = ["exe", "msi", "bat", "cmd", "sh", "bin", "app", "dmg", "apk", "jar", "ps1", "vbs", "com", "scr", "run", "appimage"];
+    const DLL_EXTS = ["dll", "so", "dylib"];
+    const ZIP_EXTS = ["zip", "rar", "7z", "tar", "gz", "bz2", "xz", "iso"];
+
+    const dropZone = document.getElementById("dropZone");
+    const fileInput = document.getElementById("fileInput");
+    const folderInput = document.getElementById("folderInput");
+    const searchInput = document.getElementById("searchInput");
+    const fileListEl = document.getElementById("fileList");
+    const tabsContainer = document.getElementById("tabsContainer");
+    const viewDescription = document.getElementById("viewDescription");
+    const clearDownloadsBtn = document.getElementById("clearDownloadsBtn");
+    const serverStatusEl = document.getElementById("serverStatus");
+    const uploadHintEl = document.getElementById("uploadHint");
+
+    // --- Local IndexedDB Fallback (if offline or worker is booting) ---
+    function initLocalDB() {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open("filter-archive-db", 1);
+        request.onupgradeneeded = (e) => {
+          const database = e.target.result;
+          if (!database.objectStoreNames.contains("archive")) {
+            database.createObjectStore("archive", { keyPath: "id" });
+          }
+        };
+        request.onsuccess = (e) => {
+          db = e.target.result;
+          resolve(db);
+        };
+        request.onerror = (e) => reject(e.target.error);
+      });
+    }
+
+    // --- Auto-Load Files from Cloudflare Worker ---
+    async function loadArchive() {
+      serverStatusEl.textContent = "CLOUDFLARE R2: SYNCING...";
+      try {
+        const res = await fetch(`${CLOUDFLARE_URL}/api/files`);
+        if (res.ok) {
+          storedItems = await res.json();
+          serverStatusEl.textContent = "CLOUDFLARE R2: ONLINE";
+          serverStatusEl.classList.add("online");
+          updateCounts();
+          render();
+          return;
+        }
+      } catch (err) {
+        console.warn("Cloudflare sync failed, falling back to local storage:", err);
+      }
+
+      // Fallback to local IndexedDB
+      await initLocalDB();
+      const tx = db.transaction("archive", "readonly");
+      const store = tx.objectStore("archive");
+      const req = store.getAll();
+      req.onsuccess = () => {
+        storedItems = (req.result || []).sort((a, b) => b.timestamp - a.timestamp);
+        serverStatusEl.textContent = "CLOUDFLARE R2: LOCAL OFFLINE MODE";
+        serverStatusEl.classList.remove("online");
+        updateCounts();
+        render();
+      };
+    }
+
+    // --- Auto-Upload File to Cloudflare R2 ---
+    async function saveItemToStorage(item, fileBlob) {
+      try {
+        const formData = new FormData();
+        formData.append("meta", JSON.stringify({
+          id: item.id,
+          name: item.name,
+          size: item.size,
+          category: item.category,
+          ext: item.ext,
+          isFolder: item.isFolder,
+          fileCount: item.fileCount || 1,
+          uploadedAt: item.uploadedAt,
+          timestamp: item.timestamp
+        }));
+        if (fileBlob) {
+          formData.append("file", fileBlob, item.name);
+        }
+
+        const res = await fetch(`${CLOUDFLARE_URL}/api/upload`, {
+          method: "POST",
+          body: formData
+        });
+
+        if (res.ok) {
+          const savedMeta = await res.json();
+          item.r2Key = savedMeta.r2Key;
+          return;
+        }
+      } catch (err) {
+        console.warn("Cloudflare upload error, saving locally:", err);
+      }
+
+      // Fallback local save
+      if (!db) await initLocalDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction("archive", "readwrite");
+        const store = tx.objectStore("archive");
+        store.put({ ...item, blob: fileBlob });
+        tx.oncomplete = () => resolve();
+        tx.onerror = (e) => reject(e.target.error);
+      });
+    }
+
+    // --- Event Listeners ---
+    fileInput.addEventListener("change", (e) => {
+      handleFiles(Array.from(e.target.files), false);
+      fileInput.value = "";
+    });
+
+    folderInput.addEventListener("change", (e) => {
+      handleFiles(Array.from(e.target.files), true);
+      folderInput.value = "";
+    });
+
+    dropZone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dropZone.classList.add("dragover");
+    });
+
+    dropZone.addEventListener("dragleave", () => {
+      dropZone.classList.remove("dragover");
+    });
+
+    dropZone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dropZone.classList.remove("dragover");
+      const files = Array.from(e.dataTransfer.files);
+      if (files.length > 0) handleFiles(files, false);
+    });
+
+    tabsContainer.addEventListener("click", (e) => {
+      const btn = e.target.closest(".tab-btn");
+      if (!btn) return;
+      document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      activeTab = btn.dataset.tab;
+      render();
+    });
+
+    searchInput.addEventListener("input", (e) => {
+      searchQuery = e.target.value.trim();
+      render();
+    });
+
+    // --- Categorization & Deep Inspection ---
+    function getCategory(filename) {
+      const parts = filename.toLowerCase().split(".");
+      const ext = parts.length > 1 ? parts.pop() : "";
+      if (HTML_EXTS.includes(ext)) return { category: "html", ext };
+      if (RUNNABLE_EXTS.includes(ext)) return { category: "runnable", ext };
+      if (DLL_EXTS.includes(ext)) return { category: "dll", ext };
+      if (ZIP_EXTS.includes(ext)) return { category: "zip", ext };
+      return { category: "other", ext: ext || "file" };
+    }
+
+    function applyInspectionRules(filenames, defaultCategory) {
+      let hasDll = false;
+      let exeCount = 0;
+      let htmlCount = 0;
+
+      filenames.forEach((name) => {
+        const { category } = getCategory(name);
+        if (category === "dll") hasDll = true;
+        if (category === "runnable") exeCount++;
+        if (category === "html") htmlCount++;
+      });
+
+      if (hasDll) return "dll";
+      if (exeCount === 1) return "runnable";
+      if (htmlCount > exeCount) return "html";
+      if (exeCount > 0) return "runnable";
+      return defaultCategory;
+    }
+
+    async function inspectZipCategory(file) {
+      if (!window.JSZip || !file.name.toLowerCase().endsWith(".zip")) {
+        return "zip";
+      }
+      try {
+        const zip = await JSZip.loadAsync(file);
+        const innerNames = Object.keys(zip.files).filter((path) => !zip.files[path].dir);
+        return applyInspectionRules(innerNames, "zip");
+      } catch (e) {
+        return "zip";
+      }
+    }
+
+    async function handleFiles(files, isFolderUpload) {
+      if (!files.length) return;
+      uploadHintEl.textContent = "INSPECTING & UPLOADING TO CLOUDFLARE R2...";
+
+      const nowStr = new Date().toLocaleDateString() + " " + new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+      if (isFolderUpload && files[0].webkitRelativePath) {
+        const folderName = files[0].webkitRelativePath.split("/")[0];
+        const totalSize = files.reduce((acc, f) => acc + f.size, 0);
+        const inspectedCategory = applyInspectionRules(files.map((f) => f.name), "folder");
+
+        let folderBlob = null;
+        if (window.JSZip) {
+          const zip = new JSZip();
+          files.forEach((f) => {
+            zip.file(f.webkitRelativePath || f.name, f);
+          });
+          folderBlob = await zip.generateAsync({ type: "blob" });
+        }
+
+        const folderItem = {
+          id: crypto.randomUUID(),
+          name: folderName + (folderBlob ? ".zip" : ""),
+          size: folderBlob ? folderBlob.size : totalSize,
+          category: inspectedCategory,
+          ext: "DIR",
+          isFolder: true,
+          fileCount: files.length,
+          uploadedAt: nowStr,
+          timestamp: Date.now()
+        };
+
+        await saveItemToStorage(folderItem, folderBlob);
+        storedItems.unshift(folderItem);
+      }
+
+      for (const file of files) {
+        let { category, ext } = getCategory(file.name);
+
+        if (ext === "zip") {
+          category = await inspectZipCategory(file);
+        }
+
+        const fileItem = {
+          id: crypto.randomUUID(),
+          name: file.name,
+          size: file.size,
+          category,
+          ext: ext.toUpperCase(),
+          isFolder: false,
+          uploadedAt: nowStr,
+          timestamp: Date.now()
+        };
+
+        await saveItemToStorage(fileItem, file);
+        storedItems.unshift(fileItem);
+      }
+
+      uploadHintEl.textContent = "Drop files, zips, or folders. Deep inspection sorts contents automatically.";
+      updateCounts();
+      render();
+    }
+
+    // --- Search Algorithm ---
+    function levenshtein(a, b) {
+      const matrix = Array.from({ length: b.length + 1 }, (_, i) => [i]);
+      for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
+
+      for (let i = 1; i <= b.length; i++) {
+        for (let j = 1; j <= a.length; j++) {
+          if (b.charAt(i - 1) === a.charAt(j - 1)) {
+            matrix[i][j] = matrix[i - 1][j - 1];
+          } else {
+            matrix[i][j] = Math.min(
+              matrix[i - 1][j - 1] + 1,
+              matrix[i][j - 1] + 1,
+              matrix[i - 1][j] + 1
+            );
+          }
+        }
+      }
+      return matrix[b.length][a.length];
+    }
+
+    function computeSearchDistance(itemName, query) {
+      const name = itemName.toLowerCase();
+      const q = query.toLowerCase();
+
+      if (name === q) return 0;
+      if (name.startsWith(q)) return 1 + (name.length - q.length) * 0.05;
+
+      const subIndex = name.indexOf(q);
+      if (subIndex !== -1) {
+        return 10 + subIndex + (name.length - q.length) * 0.05;
+      }
+
+      const baseName = name.includes(".") ? name.substring(0, name.lastIndexOf(".")) : name;
+      return 50 + Math.min(levenshtein(q, name), levenshtein(q, baseName));
+    }
+
+    // --- Download Item ---
+    async function downloadItem(id) {
+      const item = storedItems.find((i) => i.id === id);
+      if (!item) return;
+
+      if (item.r2Key) {
+        const a = document.createElement("a");
+        a.href = `${CLOUDFLARE_URL}/api/download/${encodeURIComponent(item.r2Key)}`;
+        a.download = item.name;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      } else if (item.blob) {
+        triggerBrowserDownload(item.blob, item.name);
+      } else if (db) {
+        const tx = db.transaction("archive", "readonly");
+        const req = tx.objectStore("archive").get(item.id);
+        req.onsuccess = () => {
+          if (req.result && req.result.blob) {
+            triggerBrowserDownload(req.result.blob, item.name);
+          }
+        };
+      }
+
+      const record = {
+        id: crypto.randomUUID(),
+        sourceId: item.id,
+        name: item.name,
+        size: item.size,
+        category: item.category,
+        ext: item.ext,
+        isFolder: item.isFolder,
+        fileCount: item.fileCount || 1,
+        downloadedAt: new Date().toLocaleDateString() + " " + new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+      };
+
+      downloadHistory.unshift(record);
+      localStorage.setItem("fa_downloads", JSON.stringify(downloadHistory));
+      updateCounts();
+      if (activeTab === "downloads") render();
+    }
+
+    function redownloadFromHistory(historyId) {
+      const hist = downloadHistory.find((h) => h.id === historyId);
+      if (!hist) return;
+      const original = storedItems.find((i) => i.id === hist.sourceId);
+      if (original) downloadItem(original.id);
+    }
+
+    function triggerBrowserDownload(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    function clearDownloadHistory() {
+      downloadHistory = [];
+      localStorage.removeItem("fa_downloads");
+      updateCounts();
+      render();
+    }
+
+    function formatBytes(bytes) {
+      if (!bytes || bytes === 0) return "0 B";
+      const k = 1024;
+      const sizes = ["B", "KB", "MB", "GB"];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+    }
+
+    function updateCounts() {
+      document.getElementById("count-all").textContent = storedItems.length;
+      document.getElementById("count-html").textContent = storedItems.filter((i) => i.category === "html").length;
+      document.getElementById("count-runnable").textContent = storedItems.filter((i) => i.category === "runnable").length;
+      document.getElementById("count-dll").textContent = storedItems.filter((i) => i.category === "dll").length;
+      document.getElementById("count-zip").textContent = storedItems.filter((i) => i.category === "zip").length;
+      document.getElementById("count-folder").textContent = storedItems.filter((i) => i.category === "folder" || i.category === "other").length;
+      document.getElementById("count-downloads").textContent = downloadHistory.length;
+    }
+
+    function render() {
+      clearDownloadsBtn.style.display = activeTab === "downloads" ? "inline-flex" : "none";
+
+      let itemsToShow = [];
+
+      if (activeTab === "downloads") {
+        itemsToShow = [...downloadHistory];
+        viewDescription.textContent = searchQuery
+          ? `SEARCHING DOWNLOADS FOR "${searchQuery.toUpperCase()}" (NEAREST TO FURTHEST)`
+          : `SHOWING DOWNLOAD LOG (${itemsToShow.length})`;
+      } else {
+        itemsToShow = activeTab === "all"
+          ? [...storedItems]
+          : activeTab === "folder"
+          ? storedItems.filter((item) => item.category === "folder" || item.category === "other")
+          : storedItems.filter((item) => item.category === activeTab);
+
+        const tabNames = {
+          all: "ALL ARCHIVED FILES",
+          html: "HTML & TEXT FILES",
+          runnable: "RUNNABLE EXECUTABLES",
+          dll: "DLL & LIBRARY FILES",
+          zip: "ZIPS & ARCHIVES",
+          folder: "FOLDERS"
+        };
+
+        viewDescription.textContent = searchQuery
+          ? `SEARCHING ${tabNames[activeTab]} FOR "${searchQuery.toUpperCase()}" (NEAREST TO FURTHEST)`
+          : `SHOWING ${tabNames[activeTab]} (${itemsToShow.length})`;
+      }
+
+      if (searchQuery) {
+        itemsToShow = itemsToShow
+          .map((item) => ({
+            ...item,
+            _distance: computeSearchDistance(item.name, searchQuery)
+          }))
+          .sort((a, b) => a._distance - b._distance);
+      }
+
+      if (itemsToShow.length === 0) {
+        fileListEl.innerHTML = `
+          <div class="empty-state">
+            <h3>ARCHIVE EMPTY</h3>
+            <p>
+              ${activeTab === "downloads"
+                ? "NO DOWNLOADS RECORDED YET."
+                : "NO FILES STORED IN THIS CATEGORY."}
+            </p>
+          </div>
+        `;
+        return;
+      }
+
+      fileListEl.innerHTML = itemsToShow
+        .map((item) => {
+          const isHistory = activeTab === "downloads";
+          const rankLabel = searchQuery
+            ? `<span class="match-score">${
+                item._distance === 0
+                  ? "EXACT"
+                  : item._distance < 50
+                  ? "NEAR"
+                  : `DIST:${Math.round(item._distance)}`
+              }</span>`
+            : "";
+
+          const subMeta = item.isFolder
+            ? `${item.fileCount} FILES / ${formatBytes(item.size)}`
+            : `${formatBytes(item.size)}`;
+
+          const timeMeta = isHistory
+            ? `DL: ${item.downloadedAt}`
+            : `ARCHIVED: ${item.uploadedAt}`;
+
+          return `
+            <article class="file-card">
+              <div class="file-header">
+                <div class="file-type-box">${item.ext}</div>
+                <div class="file-info">
+                  <div class="file-name" title="${item.name}">${item.name}</div>
+                  <div class="file-meta">
+                    <span>${subMeta}</span>
+                    ${rankLabel}
+                  </div>
+                  <div class="file-meta" style="margin-top:0.25rem;">
+                    <span>${timeMeta}</span>
+                  </div>
+                </div>
+              </div>
+              <div>
+                ${
+                  isHistory
+                    ? `<button class="btn btn-sm" onclick="redownloadFromHistory('${item.id}')">DOWNLOAD AGAIN</button>`
+                    : `<button class="btn btn-sm" onclick="downloadItem('${item.id}')">DOWNLOAD</button>`
+                }
+              </div>
+            </article>
+          `;
+        })
+        .join("");
+    }
+
+    loadArchive();
+  </script>
+</body>
+</html>
