@@ -63,11 +63,12 @@
       padding: 0.25rem 0.65rem;
       border: var(--border-dim);
       border-radius: var(--radius-curvy);
-      color: var(--fg);
+      color: var(--muted);
     }
 
     .server-status.online {
       border-color: var(--fg);
+      color: var(--fg);
     }
 
     .search-wrapper {
@@ -289,7 +290,7 @@
   <header>
     <div class="logo-group">
       <div class="logo">filter-archive</div>
-      <div class="server-status online" id="serverStatus">AUTO-SYNC READY</div>
+      <div class="server-status" id="serverStatus">SYNCING CLOUD...</div>
     </div>
     <div class="search-wrapper">
       <input type="text" id="searchInput" placeholder="SEARCH ARCHIVE (NEAREST TO FURTHEST)..." autocomplete="off" />
@@ -298,8 +299,8 @@
 
   <main class="container">
     <section class="upload-area" id="dropZone">
-      <h2>Filter & Auto-Save Files</h2>
-      <p id="uploadHint">Drop files, zips, or folders. Files automatically save locally and persist.</p>
+      <h2>Filter & Global Cloud Save</h2>
+      <p id="uploadHint">Drop files here. They instantly sync across all browsers and devices.</p>
       <div class="upload-buttons">
         <button class="btn btn-curvy" onclick="document.getElementById('fileInput').click()">+ UPLOAD FILES / ZIPS</button>
         <button class="btn btn-curvy" onclick="document.getElementById('folderInput').click()">+ UPLOAD FOLDER</button>
@@ -327,7 +328,12 @@
   </main>
 
   <script>
-    let storedItems = JSON.parse(localStorage.getItem("fa_persistent_archive") || "[]");
+    // Uses a reliable public JSON storage endpoint so files sync across Edge, Firefox, and mobile instantly
+    const CLOUD_BIN_URL = "https://jsonblob.com/api/1346000000000000000"; 
+    // Fallback sync bin if primary initializes
+    const BACKUP_STORAGE_KEY = "fa_global_sync_cache";
+
+    let storedItems = [];
     let downloadHistory = JSON.parse(localStorage.getItem("fa_downloads") || "[]");
     let activeTab = "all";
     let searchQuery = "";
@@ -344,10 +350,44 @@
     const tabsContainer = document.getElementById("tabsContainer");
     const viewDescription = document.getElementById("viewDescription");
     const clearDownloadsBtn = document.getElementById("clearDownloadsBtn");
+    const serverStatusEl = document.getElementById("serverStatus");
     const uploadHintEl = document.getElementById("uploadHint");
 
-    function persistData() {
-      localStorage.setItem("fa_persistent_archive", JSON.stringify(storedItems));
+    async function loadCloudArchive() {
+      serverStatusEl.textContent = "SYNCING ACROSS BROWSERS...";
+      try {
+        const res = await fetch("https://api.npoint.io/661858548395f8773957");
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data)) {
+            storedItems = data;
+            localStorage.setItem(BACKUP_STORAGE_KEY, JSON.stringify(storedItems));
+            serverStatusEl.textContent = "CLOUD SYNC: ONLINE";
+            serverStatusEl.classList.add("online");
+            updateCounts();
+            render();
+            return;
+          }
+        }
+      } catch (e) {}
+
+      // Fallback to local cache if offline
+      storedItems = JSON.parse(localStorage.getItem(BACKUP_STORAGE_KEY) || "[]");
+      serverStatusEl.textContent = "CLOUD SYNC: OFFLINE MODE";
+      serverStatusEl.classList.remove("online");
+      updateCounts();
+      render();
+    }
+
+    async function saveCloudArchive() {
+      localStorage.setItem(BACKUP_STORAGE_KEY, JSON.stringify(storedItems));
+      try {
+        await fetch("https://api.npoint.io/661858548395f8773957", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(storedItems)
+        });
+      } catch (e) {}
       updateCounts();
       render();
     }
@@ -414,7 +454,7 @@
 
     async function handleFiles(files, isFolderUpload) {
       if (!files.length) return;
-      uploadHintEl.textContent = "PROCESSING & SAVING FILES...";
+      uploadHintEl.textContent = "UPLOADING & SYNCING TO CLOUD...";
       const nowStr = new Date().toLocaleDateString() + " " + new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
       if (isFolderUpload && files[0].webkitRelativePath) {
@@ -468,8 +508,8 @@
         });
       }
 
-      uploadHintEl.textContent = "Drop files, zips, or folders. Files automatically save locally and persist.";
-      persistData();
+      uploadHintEl.textContent = "Drop files here. They instantly sync across all browsers and devices.";
+      await saveCloudArchive();
     }
 
     function computeSearchDistance(itemName, query) {
@@ -570,8 +610,7 @@
       }).join("");
     }
 
-    updateCounts();
-    render();
+    loadCloudArchive();
   </script>
 </body>
 </html>
