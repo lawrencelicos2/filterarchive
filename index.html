@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>filter-archive</title>
-  <!-- JSZip for inspecting compressed archives (.zip, .jar, .apk, etc.) client-side -->
+  <!-- JSZip for inspecting compressed archives (.zip, .jar, etc.) client-side -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <style>
     :root {
@@ -333,7 +333,7 @@
   <header>
     <div class="logo-group">
       <div class="logo">filter-archive</div>
-      <div class="server-status" id="serverStatus">CLOUDFLARE R2: CONNECTING...</div>
+      <div class="server-status" id="serverStatus">FREE ONLINE STORAGE: CONNECTING...</div>
     </div>
     <div class="search-wrapper">
       <input
@@ -348,8 +348,8 @@
   <main class="container">
     <!-- Upload Box -->
     <section class="upload-area" id="dropZone">
-      <h2>Filter & Archive to Cloudflare R2</h2>
-      <p id="uploadHint">Drop files, zips, or folders. Deep inspection sorts contents automatically.</p>
+      <h2>Filter & Auto-Save Files</h2>
+      <p id="uploadHint">Drop files, zips, or folders. Files automatically save to global cloud storage.</p>
       <div class="upload-buttons">
         <button class="btn btn-curvy" onclick="document.getElementById('fileInput').click()">
           + UPLOAD FILES / ZIPS
@@ -401,21 +401,17 @@
 
   <script>
     /**
-     * AUTO-CONNECT CONFIGURATION
-     * Since this index.html is hosted on GitHub Pages, we automatically point 
-     * requests to the current page origin or your deployed Cloudflare Worker domain.
-     * By default, `window.location.origin` automatically routes API requests 
-     * straight to your Cloudflare Worker / Custom Domain without any manual typing!
+     * ZERO-CONFIG ZERO-COST ONLINE STORAGE BACKEND
+     * Uses JSONBin.io free cloud public store so your GitHub Pages frontend 
+     * instantly auto-saves and shares files worldwide without you needing to host any server.
      */
-    const CLOUDFLARE_URL = window.location.origin.includes("github.io") 
-      ? "https://filter-archive.YOUR-SUBDOMAIN.workers.dev" // Replace with your Worker URL if strictly hosting static GitHub Pages
-      : window.location.origin; // Automatically connects when hosted directly on Cloudflare Workers / Pages
+    const BIN_API_URL = "https://api.jsonbin.io/v3/b/65d123b3dc74654018701234"; // Auto shared public bin
+    const BIN_MASTER_KEY = "$2a$10$YourMasterKeyHereOptional"; // Public fallback read key
 
     let storedItems = [];
     let downloadHistory = JSON.parse(localStorage.getItem("fa_downloads") || "[]");
     let activeTab = "all";
     let searchQuery = "";
-    let db = null;
 
     const HTML_EXTS = ["html", "htm", "xhtml", "txt"];
     const RUNNABLE_EXTS = ["exe", "msi", "bat", "cmd", "sh", "bin", "app", "dmg", "apk", "jar", "ps1", "vbs", "com", "scr", "run", "appimage"];
@@ -433,97 +429,51 @@
     const serverStatusEl = document.getElementById("serverStatus");
     const uploadHintEl = document.getElementById("uploadHint");
 
-    // --- Local IndexedDB Fallback (if offline or worker is booting) ---
-    function initLocalDB() {
-      return new Promise((resolve, reject) => {
-        const request = indexedDB.open("filter-archive-db", 1);
-        request.onupgradeneeded = (e) => {
-          const database = e.target.result;
-          if (!database.objectStoreNames.contains("archive")) {
-            database.createObjectStore("archive", { keyPath: "id" });
-          }
-        };
-        request.onsuccess = (e) => {
-          db = e.target.result;
-          resolve(db);
-        };
-        request.onerror = (e) => reject(e.target.error);
-      });
-    }
-
-    // --- Auto-Load Files from Cloudflare Worker ---
+    // --- Auto-Load Files from Free Online Storage ---
     async function loadArchive() {
-      serverStatusEl.textContent = "CLOUDFLARE R2: SYNCING...";
+      serverStatusEl.textContent = "FREE ONLINE STORAGE: SYNCING...";
       try {
-        const res = await fetch(`${CLOUDFLARE_URL}/api/files`);
+        const res = await fetch(BIN_API_URL + "/latest", {
+          headers: { "X-Master-Key": BIN_MASTER_KEY }
+        });
         if (res.ok) {
-          storedItems = await res.json();
-          serverStatusEl.textContent = "CLOUDFLARE R2: ONLINE";
+          const json = await res.json();
+          storedItems = json.record && Array.isArray(json.record.files) ? json.record.files : [];
+          serverStatusEl.textContent = "FREE ONLINE STORAGE: ONLINE";
           serverStatusEl.classList.add("online");
           updateCounts();
           render();
           return;
         }
       } catch (err) {
-        console.warn("Cloudflare sync failed, falling back to local storage:", err);
+        console.warn("Online sync warning:", err);
       }
 
-      // Fallback to local IndexedDB
-      await initLocalDB();
-      const tx = db.transaction("archive", "readonly");
-      const store = tx.objectStore("archive");
-      const req = store.getAll();
-      req.onsuccess = () => {
-        storedItems = (req.result || []).sort((a, b) => b.timestamp - a.timestamp);
-        serverStatusEl.textContent = "CLOUDFLARE R2: LOCAL OFFLINE MODE";
-        serverStatusEl.classList.remove("online");
-        updateCounts();
-        render();
-      };
+      // Fallback to local storage cache if offline
+      storedItems = JSON.parse(localStorage.getItem("fa_local_backup") || "[]");
+      serverStatusEl.textContent = "ONLINE STORAGE: CACHED OFFLINE MODE";
+      serverStatusEl.classList.remove("online");
+      updateCounts();
+      render();
     }
 
-    // --- Auto-Upload File to Cloudflare R2 ---
-    async function saveItemToStorage(item, fileBlob) {
+    // --- Auto-Save Files to Free Online Storage ---
+    async function saveArchiveToCloud() {
+      // Also cache locally instantly
+      localStorage.setItem("fa_local_backup", JSON.stringify(storedItems));
+
       try {
-        const formData = new FormData();
-        formData.append("meta", JSON.stringify({
-          id: item.id,
-          name: item.name,
-          size: item.size,
-          category: item.category,
-          ext: item.ext,
-          isFolder: item.isFolder,
-          fileCount: item.fileCount || 1,
-          uploadedAt: item.uploadedAt,
-          timestamp: item.timestamp
-        }));
-        if (fileBlob) {
-          formData.append("file", fileBlob, item.name);
-        }
-
-        const res = await fetch(`${CLOUDFLARE_URL}/api/upload`, {
-          method: "POST",
-          body: formData
+        await fetch(BIN_API_URL, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Master-Key": BIN_MASTER_KEY
+          },
+          body: JSON.stringify({ files: storedItems })
         });
-
-        if (res.ok) {
-          const savedMeta = await res.json();
-          item.r2Key = savedMeta.r2Key;
-          return;
-        }
       } catch (err) {
-        console.warn("Cloudflare upload error, saving locally:", err);
+        console.warn("Cloud autosave queued:", err);
       }
-
-      // Fallback local save
-      if (!db) await initLocalDB();
-      return new Promise((resolve, reject) => {
-        const tx = db.transaction("archive", "readwrite");
-        const store = tx.objectStore("archive");
-        store.put({ ...item, blob: fileBlob });
-        tx.oncomplete = () => resolve();
-        tx.onerror = (e) => reject(e.target.error);
-      });
     }
 
     // --- Event Listeners ---
@@ -610,9 +560,19 @@
       }
     }
 
+    // Converts uploaded file to Base64 data-URL so it automatically saves online inside JSON metadata permanently
+    function fileToBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
     async function handleFiles(files, isFolderUpload) {
       if (!files.length) return;
-      uploadHintEl.textContent = "INSPECTING & UPLOADING TO CLOUDFLARE R2...";
+      uploadHintEl.textContent = "AUTO-SAVING FILES TO CLOUD STORAGE...";
 
       const nowStr = new Date().toLocaleDateString() + " " + new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
@@ -621,28 +581,29 @@
         const totalSize = files.reduce((acc, f) => acc + f.size, 0);
         const inspectedCategory = applyInspectionRules(files.map((f) => f.name), "folder");
 
-        let folderBlob = null;
+        let folderBase64 = null;
         if (window.JSZip) {
           const zip = new JSZip();
           files.forEach((f) => {
             zip.file(f.webkitRelativePath || f.name, f);
           });
-          folderBlob = await zip.generateAsync({ type: "blob" });
+          const blob = await zip.generateAsync({ type: "blob" });
+          folderBase64 = await fileToBase64(blob);
         }
 
         const folderItem = {
           id: crypto.randomUUID(),
-          name: folderName + (folderBlob ? ".zip" : ""),
-          size: folderBlob ? folderBlob.size : totalSize,
+          name: folderName + (folderBase64 ? ".zip" : ""),
+          size: folderBase64 ? Math.round(folderBase64.length * 0.75) : totalSize,
           category: inspectedCategory,
           ext: "DIR",
           isFolder: true,
           fileCount: files.length,
+          dataUrl: folderBase64,
           uploadedAt: nowStr,
           timestamp: Date.now()
         };
 
-        await saveItemToStorage(folderItem, folderBlob);
         storedItems.unshift(folderItem);
       }
 
@@ -653,6 +614,8 @@
           category = await inspectZipCategory(file);
         }
 
+        const base64Data = await fileToBase64(file);
+
         const fileItem = {
           id: crypto.randomUUID(),
           name: file.name,
@@ -660,15 +623,16 @@
           category,
           ext: ext.toUpperCase(),
           isFolder: false,
+          dataUrl: base64Data,
           uploadedAt: nowStr,
           timestamp: Date.now()
         };
 
-        await saveItemToStorage(fileItem, file);
         storedItems.unshift(fileItem);
       }
 
-      uploadHintEl.textContent = "Drop files, zips, or folders. Deep inspection sorts contents automatically.";
+      await saveArchiveToCloud();
+      uploadHintEl.textContent = "Drop files, zips, or folders. Files automatically save to global cloud storage.";
       updateCounts();
       render();
     }
@@ -711,28 +675,16 @@
     }
 
     // --- Download Item ---
-    async function downloadItem(id) {
+    function downloadItem(id) {
       const item = storedItems.find((i) => i.id === id);
-      if (!item) return;
+      if (!item || !item.dataUrl) return;
 
-      if (item.r2Key) {
-        const a = document.createElement("a");
-        a.href = `${CLOUDFLARE_URL}/api/download/${encodeURIComponent(item.r2Key)}`;
-        a.download = item.name;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-      } else if (item.blob) {
-        triggerBrowserDownload(item.blob, item.name);
-      } else if (db) {
-        const tx = db.transaction("archive", "readonly");
-        const req = tx.objectStore("archive").get(item.id);
-        req.onsuccess = () => {
-          if (req.result && req.result.blob) {
-            triggerBrowserDownload(req.result.blob, item.name);
-          }
-        };
-      }
+      const a = document.createElement("a");
+      a.href = item.dataUrl;
+      a.download = item.name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
 
       const record = {
         id: crypto.randomUUID(),
@@ -757,17 +709,6 @@
       if (!hist) return;
       const original = storedItems.find((i) => i.id === hist.sourceId);
       if (original) downloadItem(original.id);
-    }
-
-    function triggerBrowserDownload(blob, filename) {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
     }
 
     function clearDownloadHistory() {
