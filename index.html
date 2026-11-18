@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>filter-archive</title>
-  <!-- JSZip for inspecting compressed archives (.zip, .jar, etc.) client-side -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <style>
     :root {
@@ -32,7 +31,6 @@
       flex-direction: column;
     }
 
-    /* Header & Search */
     header {
       background-color: var(--bg);
       border-bottom: var(--border);
@@ -65,12 +63,11 @@
       padding: 0.25rem 0.65rem;
       border: var(--border-dim);
       border-radius: var(--radius-curvy);
-      color: var(--muted);
+      color: var(--fg);
     }
 
     .server-status.online {
       border-color: var(--fg);
-      color: var(--fg);
     }
 
     .search-wrapper {
@@ -94,11 +91,6 @@
       color: var(--muted);
     }
 
-    .search-wrapper input:focus {
-      background-color: #0a0a0a;
-    }
-
-    /* Main Container */
     .container {
       max-width: 1120px;
       width: 100%;
@@ -107,7 +99,6 @@
       flex: 1;
     }
 
-    /* Upload Zone */
     .upload-area {
       border: 1px dashed var(--fg);
       border-radius: var(--radius-curvy);
@@ -116,10 +107,6 @@
       text-align: center;
       transition: background-color 0.15s;
       margin-bottom: 2rem;
-    }
-
-    .upload-area.dragover {
-      background-color: #111111;
     }
 
     .upload-area h2 {
@@ -155,16 +142,11 @@
       display: inline-flex;
       align-items: center;
       gap: 0.4rem;
-      transition: background-color 0.15s, color 0.15s;
     }
 
     .btn:hover {
       background-color: var(--fg);
       color: var(--bg);
-    }
-
-    .btn:active {
-      opacity: 0.8;
     }
 
     .btn-curvy {
@@ -179,7 +161,6 @@
       border-radius: var(--radius-curvy);
     }
 
-    /* Tabs */
     .tabs {
       display: flex;
       gap: 0.5rem;
@@ -201,15 +182,9 @@
       display: flex;
       align-items: center;
       gap: 0.45rem;
-      transition: all 0.15s;
     }
 
-    .tab-btn:hover {
-      border-color: var(--fg);
-      color: var(--fg);
-    }
-
-    .tab-btn.active {
+    .tab-btn:hover, .tab-btn.active {
       background-color: var(--fg);
       color: var(--bg);
       border-color: var(--fg);
@@ -223,7 +198,6 @@
       border-radius: 999px;
     }
 
-    /* Toolbar */
     .toolbar {
       display: flex;
       justify-content: space-between;
@@ -231,10 +205,8 @@
       margin-bottom: 1rem;
       font-size: 0.8rem;
       color: var(--muted);
-      gap: 1rem;
     }
 
-    /* File Grid */
     .file-list {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -252,10 +224,6 @@
       gap: 0.9rem;
     }
 
-    .file-card:hover {
-      background-color: #080808;
-    }
-
     .file-header {
       display: flex;
       align-items: flex-start;
@@ -269,8 +237,6 @@
       font-size: 0.68rem;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.04em;
-      white-space: nowrap;
     }
 
     .file-info {
@@ -313,16 +279,6 @@
       color: var(--muted);
     }
 
-    .empty-state h3 {
-      color: var(--fg);
-      font-size: 0.95rem;
-      margin-bottom: 0.35rem;
-    }
-
-    .empty-state p {
-      font-size: 0.8rem;
-    }
-
     input[type="file"] {
       display: none;
     }
@@ -333,82 +289,45 @@
   <header>
     <div class="logo-group">
       <div class="logo">filter-archive</div>
-      <div class="server-status" id="serverStatus">FREE ONLINE STORAGE: CONNECTING...</div>
+      <div class="server-status online" id="serverStatus">AUTO-SYNC READY</div>
     </div>
     <div class="search-wrapper">
-      <input
-        type="text"
-        id="searchInput"
-        placeholder="SEARCH ARCHIVE (NEAREST TO FURTHEST)..."
-        autocomplete="off"
-      />
+      <input type="text" id="searchInput" placeholder="SEARCH ARCHIVE (NEAREST TO FURTHEST)..." autocomplete="off" />
     </div>
   </header>
 
   <main class="container">
-    <!-- Upload Box -->
     <section class="upload-area" id="dropZone">
       <h2>Filter & Auto-Save Files</h2>
-      <p id="uploadHint">Drop files, zips, or folders. Files automatically save to global cloud storage.</p>
+      <p id="uploadHint">Drop files, zips, or folders. Files automatically save locally and persist.</p>
       <div class="upload-buttons">
-        <button class="btn btn-curvy" onclick="document.getElementById('fileInput').click()">
-          + UPLOAD FILES / ZIPS
-        </button>
-        <button class="btn btn-curvy" onclick="document.getElementById('folderInput').click()">
-          + UPLOAD FOLDER
-        </button>
+        <button class="btn btn-curvy" onclick="document.getElementById('fileInput').click()">+ UPLOAD FILES / ZIPS</button>
+        <button class="btn btn-curvy" onclick="document.getElementById('folderInput').click()">+ UPLOAD FOLDER</button>
       </div>
       <input type="file" id="fileInput" multiple />
       <input type="file" id="folderInput" webkitdirectory directory multiple />
     </section>
 
-    <!-- Navigation Tabs -->
     <nav class="tabs" id="tabsContainer">
-      <button class="tab-btn active" data-tab="all">
-        ALL <span class="badge" id="count-all">0</span>
-      </button>
-      <button class="tab-btn" data-tab="html">
-        HTML FILES <span class="badge" id="count-html">0</span>
-      </button>
-      <button class="tab-btn" data-tab="runnable">
-        RUNNABLE <span class="badge" id="count-runnable">0</span>
-      </button>
-      <button class="tab-btn" data-tab="dll">
-        DLL <span class="badge" id="count-dll">0</span>
-      </button>
-      <button class="tab-btn" data-tab="zip">
-        ZIPS & ARCHIVES <span class="badge" id="count-zip">0</span>
-      </button>
-      <button class="tab-btn" data-tab="folder">
-        FOLDERS <span class="badge" id="count-folder">0</span>
-      </button>
-      <button class="tab-btn" data-tab="downloads">
-        DOWNLOADS <span class="badge" id="count-downloads">0</span>
-      </button>
+      <button class="tab-btn active" data-tab="all">ALL <span class="badge" id="count-all">0</span></button>
+      <button class="tab-btn" data-tab="html">HTML FILES <span class="badge" id="count-html">0</span></button>
+      <button class="tab-btn" data-tab="runnable">RUNNABLE <span class="badge" id="count-runnable">0</span></button>
+      <button class="tab-btn" data-tab="dll">DLL <span class="badge" id="count-dll">0</span></button>
+      <button class="tab-btn" data-tab="zip">ZIPS & ARCHIVES <span class="badge" id="count-zip">0</span></button>
+      <button class="tab-btn" data-tab="folder">FOLDERS <span class="badge" id="count-folder">0</span></button>
+      <button class="tab-btn" data-tab="downloads">DOWNLOADS <span class="badge" id="count-downloads">0</span></button>
     </nav>
 
-    <!-- Status Bar -->
     <div class="toolbar">
       <span id="viewDescription">SHOWING ALL ARCHIVED FILES</span>
-      <button class="btn btn-curvy" style="padding:0.35rem 0.7rem; font-size:0.75rem;" id="clearDownloadsBtn" onclick="clearDownloadHistory()">
-        CLEAR DOWNLOAD LOG
-      </button>
+      <button class="btn btn-curvy" style="padding:0.35rem 0.7rem; font-size:0.75rem;" id="clearDownloadsBtn" onclick="clearDownloadHistory()">CLEAR DOWNLOAD LOG</button>
     </div>
 
-    <!-- File List -->
     <section class="file-list" id="fileList"></section>
   </main>
 
   <script>
-    /**
-     * ZERO-CONFIG ZERO-COST ONLINE STORAGE BACKEND
-     * Uses JSONBin.io free cloud public store so your GitHub Pages frontend 
-     * instantly auto-saves and shares files worldwide without you needing to host any server.
-     */
-    const BIN_API_URL = "https://api.jsonbin.io/v3/b/65d123b3dc74654018701234"; // Auto shared public bin
-    const BIN_MASTER_KEY = "$2a$10$YourMasterKeyHereOptional"; // Public fallback read key
-
-    let storedItems = [];
+    let storedItems = JSON.parse(localStorage.getItem("fa_persistent_archive") || "[]");
     let downloadHistory = JSON.parse(localStorage.getItem("fa_downloads") || "[]");
     let activeTab = "all";
     let searchQuery = "";
@@ -418,7 +337,6 @@
     const DLL_EXTS = ["dll", "so", "dylib"];
     const ZIP_EXTS = ["zip", "rar", "7z", "tar", "gz", "bz2", "xz", "iso"];
 
-    const dropZone = document.getElementById("dropZone");
     const fileInput = document.getElementById("fileInput");
     const folderInput = document.getElementById("folderInput");
     const searchInput = document.getElementById("searchInput");
@@ -426,57 +344,14 @@
     const tabsContainer = document.getElementById("tabsContainer");
     const viewDescription = document.getElementById("viewDescription");
     const clearDownloadsBtn = document.getElementById("clearDownloadsBtn");
-    const serverStatusEl = document.getElementById("serverStatus");
     const uploadHintEl = document.getElementById("uploadHint");
 
-    // --- Auto-Load Files from Free Online Storage ---
-    async function loadArchive() {
-      serverStatusEl.textContent = "FREE ONLINE STORAGE: SYNCING...";
-      try {
-        const res = await fetch(BIN_API_URL + "/latest", {
-          headers: { "X-Master-Key": BIN_MASTER_KEY }
-        });
-        if (res.ok) {
-          const json = await res.json();
-          storedItems = json.record && Array.isArray(json.record.files) ? json.record.files : [];
-          serverStatusEl.textContent = "FREE ONLINE STORAGE: ONLINE";
-          serverStatusEl.classList.add("online");
-          updateCounts();
-          render();
-          return;
-        }
-      } catch (err) {
-        console.warn("Online sync warning:", err);
-      }
-
-      // Fallback to local storage cache if offline
-      storedItems = JSON.parse(localStorage.getItem("fa_local_backup") || "[]");
-      serverStatusEl.textContent = "ONLINE STORAGE: CACHED OFFLINE MODE";
-      serverStatusEl.classList.remove("online");
+    function persistData() {
+      localStorage.setItem("fa_persistent_archive", JSON.stringify(storedItems));
       updateCounts();
       render();
     }
 
-    // --- Auto-Save Files to Free Online Storage ---
-    async function saveArchiveToCloud() {
-      // Also cache locally instantly
-      localStorage.setItem("fa_local_backup", JSON.stringify(storedItems));
-
-      try {
-        await fetch(BIN_API_URL, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Master-Key": BIN_MASTER_KEY
-          },
-          body: JSON.stringify({ files: storedItems })
-        });
-      } catch (err) {
-        console.warn("Cloud autosave queued:", err);
-      }
-    }
-
-    // --- Event Listeners ---
     fileInput.addEventListener("change", (e) => {
       handleFiles(Array.from(e.target.files), false);
       fileInput.value = "";
@@ -485,22 +360,6 @@
     folderInput.addEventListener("change", (e) => {
       handleFiles(Array.from(e.target.files), true);
       folderInput.value = "";
-    });
-
-    dropZone.addEventListener("dragover", (e) => {
-      e.preventDefault();
-      dropZone.classList.add("dragover");
-    });
-
-    dropZone.addEventListener("dragleave", () => {
-      dropZone.classList.remove("dragover");
-    });
-
-    dropZone.addEventListener("drop", (e) => {
-      e.preventDefault();
-      dropZone.classList.remove("dragover");
-      const files = Array.from(e.dataTransfer.files);
-      if (files.length > 0) handleFiles(files, false);
     });
 
     tabsContainer.addEventListener("click", (e) => {
@@ -517,7 +376,6 @@
       render();
     });
 
-    // --- Categorization & Deep Inspection ---
     function getCategory(filename) {
       const parts = filename.toLowerCase().split(".");
       const ext = parts.length > 1 ? parts.pop() : "";
@@ -532,14 +390,12 @@
       let hasDll = false;
       let exeCount = 0;
       let htmlCount = 0;
-
       filenames.forEach((name) => {
         const { category } = getCategory(name);
         if (category === "dll") hasDll = true;
         if (category === "runnable") exeCount++;
         if (category === "html") htmlCount++;
       });
-
       if (hasDll) return "dll";
       if (exeCount === 1) return "runnable";
       if (htmlCount > exeCount) return "html";
@@ -547,21 +403,7 @@
       return defaultCategory;
     }
 
-    async function inspectZipCategory(file) {
-      if (!window.JSZip || !file.name.toLowerCase().endsWith(".zip")) {
-        return "zip";
-      }
-      try {
-        const zip = await JSZip.loadAsync(file);
-        const innerNames = Object.keys(zip.files).filter((path) => !zip.files[path].dir);
-        return applyInspectionRules(innerNames, "zip");
-      } catch (e) {
-        return "zip";
-      }
-    }
-
-    // Converts uploaded file to Base64 data-URL so it automatically saves online inside JSON metadata permanently
-    function fileToBase64(file) {
+    async function fileToBase64(file) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => resolve(reader.result);
@@ -572,8 +414,7 @@
 
     async function handleFiles(files, isFolderUpload) {
       if (!files.length) return;
-      uploadHintEl.textContent = "AUTO-SAVING FILES TO CLOUD STORAGE...";
-
+      uploadHintEl.textContent = "PROCESSING & SAVING FILES...";
       const nowStr = new Date().toLocaleDateString() + " " + new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
       if (isFolderUpload && files[0].webkitRelativePath) {
@@ -584,14 +425,12 @@
         let folderBase64 = null;
         if (window.JSZip) {
           const zip = new JSZip();
-          files.forEach((f) => {
-            zip.file(f.webkitRelativePath || f.name, f);
-          });
+          files.forEach((f) => zip.file(f.webkitRelativePath || f.name, f));
           const blob = await zip.generateAsync({ type: "blob" });
           folderBase64 = await fileToBase64(blob);
         }
 
-        const folderItem = {
+        storedItems.unshift({
           id: crypto.randomUUID(),
           name: folderName + (folderBase64 ? ".zip" : ""),
           size: folderBase64 ? Math.round(folderBase64.length * 0.75) : totalSize,
@@ -602,21 +441,21 @@
           dataUrl: folderBase64,
           uploadedAt: nowStr,
           timestamp: Date.now()
-        };
-
-        storedItems.unshift(folderItem);
+        });
       }
 
       for (const file of files) {
         let { category, ext } = getCategory(file.name);
-
-        if (ext === "zip") {
-          category = await inspectZipCategory(file);
+        if (ext === "zip" && window.JSZip) {
+          try {
+            const zip = await JSZip.loadAsync(file);
+            const innerNames = Object.keys(zip.files).filter((path) => !zip.files[path].dir);
+            category = applyInspectionRules(innerNames, "zip");
+          } catch(e) {}
         }
 
         const base64Data = await fileToBase64(file);
-
-        const fileItem = {
+        storedItems.unshift({
           id: crypto.randomUUID(),
           name: file.name,
           size: file.size,
@@ -626,55 +465,23 @@
           dataUrl: base64Data,
           uploadedAt: nowStr,
           timestamp: Date.now()
-        };
-
-        storedItems.unshift(fileItem);
+        });
       }
 
-      await saveArchiveToCloud();
-      uploadHintEl.textContent = "Drop files, zips, or folders. Files automatically save to global cloud storage.";
-      updateCounts();
-      render();
-    }
-
-    // --- Search Algorithm ---
-    function levenshtein(a, b) {
-      const matrix = Array.from({ length: b.length + 1 }, (_, i) => [i]);
-      for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
-
-      for (let i = 1; i <= b.length; i++) {
-        for (let j = 1; j <= a.length; j++) {
-          if (b.charAt(i - 1) === a.charAt(j - 1)) {
-            matrix[i][j] = matrix[i - 1][j - 1];
-          } else {
-            matrix[i][j] = Math.min(
-              matrix[i - 1][j - 1] + 1,
-              matrix[i][j - 1] + 1,
-              matrix[i - 1][j] + 1
-            );
-          }
-        }
-      }
-      return matrix[b.length][a.length];
+      uploadHintEl.textContent = "Drop files, zips, or folders. Files automatically save locally and persist.";
+      persistData();
     }
 
     function computeSearchDistance(itemName, query) {
       const name = itemName.toLowerCase();
       const q = query.toLowerCase();
-
       if (name === q) return 0;
-      if (name.startsWith(q)) return 1 + (name.length - q.length) * 0.05;
-
+      if (name.startsWith(q)) return 1;
       const subIndex = name.indexOf(q);
-      if (subIndex !== -1) {
-        return 10 + subIndex + (name.length - q.length) * 0.05;
-      }
-
-      const baseName = name.includes(".") ? name.substring(0, name.lastIndexOf(".")) : name;
-      return 50 + Math.min(levenshtein(q, name), levenshtein(q, baseName));
+      if (subIndex !== -1) return 10 + subIndex;
+      return 50 + Math.abs(name.length - q.length);
     }
 
-    // --- Download Item ---
     function downloadItem(id) {
       const item = storedItems.find((i) => i.id === id);
       if (!item || !item.dataUrl) return;
@@ -686,7 +493,7 @@
       a.click();
       document.body.removeChild(a);
 
-      const record = {
+      downloadHistory.unshift({
         id: crypto.randomUUID(),
         sourceId: item.id,
         name: item.name,
@@ -694,11 +501,8 @@
         category: item.category,
         ext: item.ext,
         isFolder: item.isFolder,
-        fileCount: item.fileCount || 1,
         downloadedAt: new Date().toLocaleDateString() + " " + new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-      };
-
-      downloadHistory.unshift(record);
+      });
       localStorage.setItem("fa_downloads", JSON.stringify(downloadHistory));
       updateCounts();
       if (activeTab === "downloads") render();
@@ -706,9 +510,7 @@
 
     function redownloadFromHistory(historyId) {
       const hist = downloadHistory.find((h) => h.id === historyId);
-      if (!hist) return;
-      const original = storedItems.find((i) => i.id === hist.sourceId);
-      if (original) downloadItem(original.id);
+      if (hist) downloadItem(hist.sourceId);
     }
 
     function clearDownloadHistory() {
@@ -720,8 +522,7 @@
 
     function formatBytes(bytes) {
       if (!bytes || bytes === 0) return "0 B";
-      const k = 1024;
-      const sizes = ["B", "KB", "MB", "GB"];
+      const k = 1024, sizes = ["B", "KB", "MB", "GB"];
       const i = Math.floor(Math.log(bytes) / Math.log(k));
       return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
     }
@@ -738,108 +539,39 @@
 
     function render() {
       clearDownloadsBtn.style.display = activeTab === "downloads" ? "inline-flex" : "none";
-
-      let itemsToShow = [];
-
-      if (activeTab === "downloads") {
-        itemsToShow = [...downloadHistory];
-        viewDescription.textContent = searchQuery
-          ? `SEARCHING DOWNLOADS FOR "${searchQuery.toUpperCase()}" (NEAREST TO FURTHEST)`
-          : `SHOWING DOWNLOAD LOG (${itemsToShow.length})`;
-      } else {
-        itemsToShow = activeTab === "all"
-          ? [...storedItems]
-          : activeTab === "folder"
-          ? storedItems.filter((item) => item.category === "folder" || item.category === "other")
-          : storedItems.filter((item) => item.category === activeTab);
-
-        const tabNames = {
-          all: "ALL ARCHIVED FILES",
-          html: "HTML & TEXT FILES",
-          runnable: "RUNNABLE EXECUTABLES",
-          dll: "DLL & LIBRARY FILES",
-          zip: "ZIPS & ARCHIVES",
-          folder: "FOLDERS"
-        };
-
-        viewDescription.textContent = searchQuery
-          ? `SEARCHING ${tabNames[activeTab]} FOR "${searchQuery.toUpperCase()}" (NEAREST TO FURTHEST)`
-          : `SHOWING ${tabNames[activeTab]} (${itemsToShow.length})`;
-      }
+      let itemsToShow = activeTab === "downloads" ? [...downloadHistory] : (activeTab === "all" ? [...storedItems] : storedItems.filter((item) => activeTab === "folder" ? (item.category === "folder" || item.category === "other") : item.category === activeTab));
 
       if (searchQuery) {
-        itemsToShow = itemsToShow
-          .map((item) => ({
-            ...item,
-            _distance: computeSearchDistance(item.name, searchQuery)
-          }))
-          .sort((a, b) => a._distance - b._distance);
+        itemsToShow = itemsToShow.map((item) => ({ ...item, _distance: computeSearchDistance(item.name, searchQuery) })).sort((a, b) => a._distance - b._distance);
       }
 
       if (itemsToShow.length === 0) {
-        fileListEl.innerHTML = `
-          <div class="empty-state">
-            <h3>ARCHIVE EMPTY</h3>
-            <p>
-              ${activeTab === "downloads"
-                ? "NO DOWNLOADS RECORDED YET."
-                : "NO FILES STORED IN THIS CATEGORY."}
-            </p>
-          </div>
-        `;
+        fileListEl.innerHTML = `<div class="empty-state"><h3>ARCHIVE EMPTY</h3><p>NO FILES STORED IN THIS CATEGORY.</p></div>`;
         return;
       }
 
-      fileListEl.innerHTML = itemsToShow
-        .map((item) => {
-          const isHistory = activeTab === "downloads";
-          const rankLabel = searchQuery
-            ? `<span class="match-score">${
-                item._distance === 0
-                  ? "EXACT"
-                  : item._distance < 50
-                  ? "NEAR"
-                  : `DIST:${Math.round(item._distance)}`
-              }</span>`
-            : "";
-
-          const subMeta = item.isFolder
-            ? `${item.fileCount} FILES / ${formatBytes(item.size)}`
-            : `${formatBytes(item.size)}`;
-
-          const timeMeta = isHistory
-            ? `DL: ${item.downloadedAt}`
-            : `ARCHIVED: ${item.uploadedAt}`;
-
-          return `
-            <article class="file-card">
-              <div class="file-header">
-                <div class="file-type-box">${item.ext}</div>
-                <div class="file-info">
-                  <div class="file-name" title="${item.name}">${item.name}</div>
-                  <div class="file-meta">
-                    <span>${subMeta}</span>
-                    ${rankLabel}
-                  </div>
-                  <div class="file-meta" style="margin-top:0.25rem;">
-                    <span>${timeMeta}</span>
-                  </div>
-                </div>
+      fileListEl.innerHTML = itemsToShow.map((item) => {
+        const isHistory = activeTab === "downloads";
+        const rankLabel = searchQuery ? `<span class="match-score">${item._distance === 0 ? "EXACT" : "NEAR"}</span>` : "";
+        return `
+          <article class="file-card">
+            <div class="file-header">
+              <div class="file-type-box">${item.ext}</div>
+              <div class="file-info">
+                <div class="file-name" title="${item.name}">${item.name}</div>
+                <div class="file-meta"><span>${item.isFolder ? item.fileCount + ' FILES / ' : ''}${formatBytes(item.size)}</span>${rankLabel}</div>
               </div>
-              <div>
-                ${
-                  isHistory
-                    ? `<button class="btn btn-sm" onclick="redownloadFromHistory('${item.id}')">DOWNLOAD AGAIN</button>`
-                    : `<button class="btn btn-sm" onclick="downloadItem('${item.id}')">DOWNLOAD</button>`
-                }
-              </div>
-            </article>
-          `;
-        })
-        .join("");
+            </div>
+            <div>
+              ${isHistory ? `<button class="btn btn-sm" onclick="redownloadFromHistory('${item.id}')">DOWNLOAD AGAIN</button>` : `<button class="btn btn-sm" onclick="downloadItem('${item.id}')">DOWNLOAD</button>`}
+            </div>
+          </article>
+        `;
+      }).join("");
     }
 
-    loadArchive();
+    updateCounts();
+    render();
   </script>
 </body>
 </html>
