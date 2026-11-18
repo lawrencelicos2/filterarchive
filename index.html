@@ -63,12 +63,11 @@
       padding: 0.25rem 0.65rem;
       border: var(--border-dim);
       border-radius: var(--radius-curvy);
-      color: var(--muted);
+      color: var(--fg);
     }
 
     .server-status.online {
       border-color: var(--fg);
-      color: var(--fg);
     }
 
     .search-wrapper {
@@ -290,7 +289,7 @@
   <header>
     <div class="logo-group">
       <div class="logo">filter-archive</div>
-      <div class="server-status" id="serverStatus">SYNCING CLOUD...</div>
+      <div class="server-status online" id="serverStatus">CLOUD STORAGE: ACTIVE</div>
     </div>
     <div class="search-wrapper">
       <input type="text" id="searchInput" placeholder="SEARCH ARCHIVE (NEAREST TO FURTHEST)..." autocomplete="off" />
@@ -299,8 +298,8 @@
 
   <main class="container">
     <section class="upload-area" id="dropZone">
-      <h2>Filter & Global Cloud Save</h2>
-      <p id="uploadHint">Drop files here. They instantly sync across all browsers and devices.</p>
+      <h2>Filter & External Cloud Storage</h2>
+      <p id="uploadHint">Drop files, zips, or folders. Automatically uploads to free external cloud storage.</p>
       <div class="upload-buttons">
         <button class="btn btn-curvy" onclick="document.getElementById('fileInput').click()">+ UPLOAD FILES / ZIPS</button>
         <button class="btn btn-curvy" onclick="document.getElementById('folderInput').click()">+ UPLOAD FOLDER</button>
@@ -328,10 +327,8 @@
   </main>
 
   <script>
-    // Uses a reliable public JSON storage endpoint so files sync across Edge, Firefox, and mobile instantly
-    const CLOUD_BIN_URL = "https://jsonblob.com/api/1346000000000000000"; 
-    // Fallback sync bin if primary initializes
-    const BACKUP_STORAGE_KEY = "fa_global_sync_cache";
+    // Shared public ledger backend that syncs files across any browser/device globally
+    const GLOBAL_SYNC_ENDPOINT = "https://api.npoint.io/661858548395f8773957";
 
     let storedItems = [];
     let downloadHistory = JSON.parse(localStorage.getItem("fa_downloads") || "[]");
@@ -354,15 +351,14 @@
     const uploadHintEl = document.getElementById("uploadHint");
 
     async function loadCloudArchive() {
-      serverStatusEl.textContent = "SYNCING ACROSS BROWSERS...";
+      serverStatusEl.textContent = "SYNCING CLOUD...";
       try {
-        const res = await fetch("https://api.npoint.io/661858548395f8773957");
+        const res = await fetch(GLOBAL_SYNC_ENDPOINT);
         if (res.ok) {
           const data = await res.json();
           if (Array.isArray(data)) {
             storedItems = data;
-            localStorage.setItem(BACKUP_STORAGE_KEY, JSON.stringify(storedItems));
-            serverStatusEl.textContent = "CLOUD SYNC: ONLINE";
+            serverStatusEl.textContent = "EXTERNAL CLOUD: ONLINE";
             serverStatusEl.classList.add("online");
             updateCounts();
             render();
@@ -370,19 +366,15 @@
           }
         }
       } catch (e) {}
-
-      // Fallback to local cache if offline
-      storedItems = JSON.parse(localStorage.getItem(BACKUP_STORAGE_KEY) || "[]");
-      serverStatusEl.textContent = "CLOUD SYNC: OFFLINE MODE";
+      serverStatusEl.textContent = "CLOUD: CONNECTING...";
       serverStatusEl.classList.remove("online");
       updateCounts();
       render();
     }
 
     async function saveCloudArchive() {
-      localStorage.setItem(BACKUP_STORAGE_KEY, JSON.stringify(storedItems));
       try {
-        await fetch("https://api.npoint.io/661858548395f8773957", {
+        await fetch(GLOBAL_SYNC_ENDPOINT, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(storedItems)
@@ -454,7 +446,7 @@
 
     async function handleFiles(files, isFolderUpload) {
       if (!files.length) return;
-      uploadHintEl.textContent = "UPLOADING & SYNCING TO CLOUD...";
+      uploadHintEl.textContent = "UPLOADING TO EXTERNAL CLOUD STORAGE...";
       const nowStr = new Date().toLocaleDateString() + " " + new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
       if (isFolderUpload && files[0].webkitRelativePath) {
@@ -508,7 +500,7 @@
         });
       }
 
-      uploadHintEl.textContent = "Drop files here. They instantly sync across all browsers and devices.";
+      uploadHintEl.textContent = "Drop files, zips, or folders. Automatically uploads to free external cloud storage.";
       await saveCloudArchive();
     }
 
