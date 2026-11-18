@@ -15,273 +15,48 @@
       --radius-curvy: 16px;
       --radius-sharp: 0px;
     }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-    }
-
-    body {
-      background-color: var(--bg);
-      color: var(--fg);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
-
-    header {
-      background-color: var(--bg);
-      border-bottom: var(--border);
-      padding: 1rem 2rem;
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
-      position: sticky;
-      top: 0;
-      z-index: 10;
-    }
-
-    .logo-group {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-    }
-
-    .logo {
-      font-size: 1.25rem;
-      font-weight: 700;
-      letter-spacing: 0.05em;
-      color: var(--fg);
-    }
-
-    .server-status {
-      font-size: 0.72rem;
-      padding: 0.25rem 0.65rem;
-      border: var(--border-dim);
-      border-radius: var(--radius-curvy);
-      color: var(--fg);
-    }
-
-    .server-status.online {
-      border-color: var(--fg);
-    }
-
-    .search-wrapper {
-      flex: 1;
-      max-width: 480px;
-      position: relative;
-    }
-
-    .search-wrapper input {
-      width: 100%;
-      padding: 0.55rem 0.95rem;
-      border: var(--border);
-      border-radius: var(--radius-curvy);
-      background-color: var(--bg);
-      color: var(--fg);
-      font-size: 0.85rem;
-      outline: none;
-    }
-
-    .search-wrapper input::placeholder {
-      color: var(--muted);
-    }
-
-    .container {
-      max-width: 1120px;
-      width: 100%;
-      margin: 0 auto;
-      padding: 2rem 1.5rem;
-      flex: 1;
-    }
-
-    .upload-area {
-      border: 1px dashed var(--fg);
-      border-radius: var(--radius-curvy);
-      background-color: var(--bg);
-      padding: 2rem;
-      text-align: center;
-      transition: background-color 0.15s;
-      margin-bottom: 2rem;
-    }
-
-    .upload-area h2 {
-      font-size: 1rem;
-      font-weight: 600;
-      margin-bottom: 0.4rem;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-    }
-
-    .upload-area p {
-      color: var(--muted);
-      font-size: 0.82rem;
-      margin-bottom: 1.25rem;
-    }
-
-    .upload-buttons {
-      display: flex;
-      justify-content: center;
-      gap: 0.75rem;
-      flex-wrap: wrap;
-    }
-
-    .btn {
-      padding: 0.55rem 1.1rem;
-      border: var(--border);
-      border-radius: var(--radius-sharp);
-      background-color: var(--bg);
-      color: var(--fg);
-      font-size: 0.8rem;
-      font-weight: 600;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-    }
-
-    .btn:hover {
-      background-color: var(--fg);
-      color: var(--bg);
-    }
-
-    .btn-curvy {
-      border-radius: var(--radius-curvy);
-    }
-
-    .btn-sm {
-      padding: 0.45rem 0.75rem;
-      font-size: 0.78rem;
-      width: 100%;
-      justify-content: center;
-      border-radius: var(--radius-curvy);
-    }
-
-    .tabs {
-      display: flex;
-      gap: 0.5rem;
-      border-bottom: var(--border);
-      padding-bottom: 0.75rem;
-      margin-bottom: 1.25rem;
-      overflow-x: auto;
-    }
-
-    .tab-btn {
-      background-color: var(--bg);
-      border: var(--border-dim);
-      border-radius: var(--radius-curvy);
-      color: var(--muted);
-      padding: 0.45rem 0.85rem;
-      font-size: 0.8rem;
-      cursor: pointer;
-      white-space: nowrap;
-      display: flex;
-      align-items: center;
-      gap: 0.45rem;
-    }
-
-    .tab-btn:hover, .tab-btn.active {
-      background-color: var(--fg);
-      color: var(--bg);
-      border-color: var(--fg);
-      font-weight: 700;
-    }
-
-    .badge {
-      font-size: 0.72rem;
-      padding: 0.05rem 0.4rem;
-      border: 1px solid currentColor;
-      border-radius: 999px;
-    }
-
-    .toolbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1rem;
-      font-size: 0.8rem;
-      color: var(--muted);
-    }
-
-    .file-list {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 1rem;
-    }
-
-    .file-card {
-      background-color: var(--bg);
-      border: var(--border);
-      border-radius: var(--radius-curvy);
-      padding: 1rem;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      gap: 0.9rem;
-    }
-
-    .file-header {
-      display: flex;
-      align-items: flex-start;
-      gap: 0.75rem;
-    }
-
-    .file-type-box {
-      border: var(--border);
-      border-radius: 6px;
-      padding: 0.3rem 0.45rem;
-      font-size: 0.68rem;
-      font-weight: 700;
-      text-transform: uppercase;
-    }
-
-    .file-info {
-      overflow: hidden;
-      flex: 1;
-    }
-
-    .file-name {
-      font-weight: 600;
-      font-size: 0.88rem;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      margin-bottom: 0.3rem;
-    }
-
-    .file-meta {
-      font-size: 0.75rem;
-      color: var(--muted);
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-      align-items: center;
-    }
-
-    .match-score {
-      color: var(--fg);
-      border: var(--border-dim);
-      border-radius: 4px;
-      padding: 0.05rem 0.35rem;
-      font-size: 0.68rem;
-    }
-
-    .empty-state {
-      grid-column: 1 / -1;
-      text-align: center;
-      padding: 3rem 1rem;
-      border: var(--border-dim);
-      border-radius: var(--radius-curvy);
-      color: var(--muted);
-    }
-
-    input[type="file"] {
-      display: none;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+    body { background-color: var(--bg); color: var(--fg); min-height: 100vh; display: flex; flex-direction: column; }
+    header { background-color: var(--bg); border-bottom: var(--border); padding: 1rem 2rem; display: flex; flex-wrap: wrap;
+      align-items: center; justify-content: space-between; gap: 1rem; position: sticky; top: 0; z-index: 10; }
+    .logo-group { display: flex; align-items: center; gap: 1rem; }
+    .logo { font-size: 1.25rem; font-weight: 700; letter-spacing: 0.05em; color: var(--fg); }
+    .server-status { font-size: 0.72rem; padding: 0.25rem 0.65rem; border: var(--border-dim); border-radius: var(--radius-curvy); color: var(--fg); }
+    .server-status.online { border-color: var(--fg); }
+    .search-wrapper { flex: 1; max-width: 480px; position: relative; }
+    .search-wrapper input { width: 100%; padding: 0.55rem 0.95rem; border: var(--border); border-radius: var(--radius-curvy);
+      background-color: var(--bg); color: var(--fg); font-size: 0.85rem; outline: none; }
+    .search-wrapper input::placeholder { color: var(--muted); }
+    .container { max-width: 1120px; width: 100%; margin: 0 auto; padding: 2rem 1.5rem; flex: 1; }
+    .upload-area { border: 1px dashed var(--fg); border-radius: var(--radius-curvy); background-color: var(--bg);
+      padding: 2rem; text-align: center; transition: background-color 0.15s; margin-bottom: 2rem; }
+    .upload-area.drag { background-color: #222; }
+    .upload-area h2 { font-size: 1rem; font-weight: 600; margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.06em; }
+    .upload-area p { color: var(--muted); font-size: 0.82rem; margin-bottom: 1.25rem; }
+    .upload-buttons { display: flex; justify-content: center; gap: 0.75rem; flex-wrap: wrap; }
+    .btn { padding: 0.55rem 1.1rem; border: var(--border); border-radius: var(--radius-sharp); background-color: var(--bg);
+      color: var(--fg); font-size: 0.8rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem; }
+    .btn:hover { background-color: var(--fg); color: var(--bg); }
+    .btn-curvy { border-radius: var(--radius-curvy); }
+    .btn-sm { padding: 0.45rem 0.75rem; font-size: 0.78rem; width: 100%; justify-content: center; border-radius: var(--radius-curvy); }
+    .tabs { display: flex; gap: 0.5rem; border-bottom: var(--border); padding-bottom: 0.75rem; margin-bottom: 1.25rem; overflow-x: auto; }
+    .tab-btn { background-color: var(--bg); border: var(--border-dim); border-radius: var(--radius-curvy); color: var(--muted);
+      padding: 0.45rem 0.85rem; font-size: 0.8rem; cursor: pointer; white-space: nowrap; display: flex; align-items: center; gap: 0.45rem; }
+    .tab-btn:hover, .tab-btn.active { background-color: var(--fg); color: var(--bg); border-color: var(--fg); font-weight: 700; }
+    .badge { font-size: 0.72rem; padding: 0.05rem 0.4rem; border: 1px solid currentColor; border-radius: 999px; }
+    .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; font-size: 0.8rem; color: var(--muted); }
+    .file-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+    .file-card { background-color: var(--bg); border: var(--border); border-radius: var(--radius-curvy); padding: 1rem;
+      display: flex; flex-direction: column; justify-content: space-between; gap: 0.9rem; }
+    .file-header { display: flex; align-items: flex-start; gap: 0.75rem; }
+    .file-type-box { border: var(--border); border-radius: 6px; padding: 0.3rem 0.45rem; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; }
+    .file-info { overflow: hidden; flex: 1; }
+    .file-name { font-weight: 600; font-size: 0.88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 0.3rem; }
+    .file-meta { font-size: 0.75rem; color: var(--muted); display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+    .match-score { color: var(--fg); border: var(--border-dim); border-radius: 4px; padding: 0.05rem 0.35rem; font-size: 0.68rem; }
+    .empty-state { grid-column: 1 / -1; text-align: center; padding: 3rem 1rem; border: var(--border-dim); border-radius: var(--radius-curvy); color: var(--muted); }
+    input[type="file"] { display: none; }
   </style>
 </head>
 <body>
@@ -289,7 +64,7 @@
   <header>
     <div class="logo-group">
       <div class="logo">filter-archive</div>
-      <div class="server-status online" id="serverStatus">AUTO-SYNC: READY</div>
+      <div class="server-status" id="serverStatus">CONNECTING...</div>
     </div>
     <div class="search-wrapper">
       <input type="text" id="searchInput" placeholder="SEARCH ARCHIVE (NEAREST TO FURTHEST)..." autocomplete="off" />
@@ -298,8 +73,8 @@
 
   <main class="container">
     <section class="upload-area" id="dropZone">
-      <h2>Filter & Auto Cloud Sync</h2>
-      <p id="uploadHint">Drop files, zips, or folders. Everything auto-saves and syncs across browsers instantly.</p>
+      <h2>Filter & Cloud Archive</h2>
+      <p id="uploadHint">Drop files, zips, or folders. Everything is saved online so anyone can download it.</p>
       <div class="upload-buttons">
         <button class="btn btn-curvy" onclick="document.getElementById('fileInput').click()">+ UPLOAD FILES / ZIPS</button>
         <button class="btn btn-curvy" onclick="document.getElementById('folderInput').click()">+ UPLOAD FOLDER</button>
@@ -327,9 +102,8 @@
   </main>
 
   <script>
-    // Built-in auto-generated cloud sync endpoint initialized specifically for your archive
-    const ENDPOINT_KEY = "fa_auto_endpoint_url";
-    let CURRENT_API = localStorage.getItem(ENDPOINT_KEY);
+    // >>> PUT YOUR CLOUDFLARE WORKER URL HERE (no slash at the end) <<<
+    const API = "https://YOUR-WORKER-NAME.YOUR-SUBDOMAIN.workers.dev";
 
     let storedItems = [];
     let downloadHistory = JSON.parse(localStorage.getItem("fa_downloads") || "[]");
@@ -346,89 +120,80 @@
     const searchInput = document.getElementById("searchInput");
     const fileListEl = document.getElementById("fileList");
     const tabsContainer = document.getElementById("tabsContainer");
-    const viewDescription = document.getElementById("viewDescription");
     const clearDownloadsBtn = document.getElementById("clearDownloadsBtn");
     const serverStatusEl = document.getElementById("serverStatus");
     const uploadHintEl = document.getElementById("uploadHint");
+    const dropZone = document.getElementById("dropZone");
+    const IDLE_HINT = uploadHintEl.textContent;
 
-    // Automatically provisions a dedicated cloud storage bin on first load so you never have to configure anything
-    async function initCloudStorage() {
-      serverStatusEl.textContent = "INITIALIZING CLOUD...";
-      if (!CURRENT_API) {
-        try {
-          const res = await fetch("https://jsonblob.com/api/jsonBlob", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "Accept": "application/json" },
-            body: JSON.stringify([])
-          });
-          if (res.headers.get("location")) {
-            CURRENT_API = res.headers.get("location");
-            localStorage.setItem(ENDPOINT_KEY, CURRENT_API);
-          }
-        } catch (e) {
-          // Fallback free JSON bin provider
-          CURRENT_API = "https://api.npoint.io/661858548395f8773957";
-          localStorage.setItem(ENDPOINT_KEY, CURRENT_API);
-        }
-      }
-      await loadCloudArchive();
+    function esc(s) {
+      return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
     }
 
+    // ---------- cloud ----------
     async function loadCloudArchive() {
-      if (!CURRENT_API) return;
       try {
-        const res = await fetch(CURRENT_API);
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data)) {
-            storedItems = data;
-            serverStatusEl.textContent = "AUTO-SYNC: ONLINE";
-            serverStatusEl.classList.add("online");
-            updateCounts();
-            render();
-            return;
-          }
-        }
-      } catch (e) {}
-
-      storedItems = JSON.parse(localStorage.getItem("fa_local_cache") || "[]");
-      serverStatusEl.textContent = "AUTO-SYNC: OFFLINE CACHE";
-      serverStatusEl.classList.remove("online");
-      updateCounts();
-      render();
-    }
-
-    async function saveCloudArchive() {
-      localStorage.setItem("fa_local_cache", JSON.stringify(storedItems));
-      if (!CURRENT_API) return;
-      try {
-        await fetch(CURRENT_API, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(storedItems)
-        });
+        const res = await fetch(API + "/list");
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const data = await res.json();
+        storedItems = data.map((f) => {
+          const guess = getCategory(f.name);
+          const m = f.meta || {};
+          return {
+            id: f.name,
+            name: f.name,
+            size: f.size,
+            category: m.category || guess.category,
+            ext: (m.ext || guess.ext).toUpperCase(),
+            isFolder: m.isFolder === "true",
+            fileCount: m.fileCount || 0,
+            uploadedAt: new Date(f.uploaded).toLocaleDateString() + " " + new Date(f.uploaded).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+            timestamp: new Date(f.uploaded).getTime()
+          };
+        }).sort((a, b) => b.timestamp - a.timestamp);
+        serverStatusEl.textContent = "CLOUD: ONLINE";
+        serverStatusEl.classList.add("online");
       } catch (e) {
-        try {
-          await fetch(CURRENT_API, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(storedItems)
-          });
-        } catch (err) {}
+        serverStatusEl.textContent = "CLOUD: OFFLINE";
+        serverStatusEl.classList.remove("online");
+        uploadHintEl.textContent = "Cannot reach storage: " + e.message + " (check the API url in the code)";
       }
       updateCounts();
       render();
     }
 
-    fileInput.addEventListener("change", (e) => {
-      handleFiles(Array.from(e.target.files), false);
-      fileInput.value = "";
-    });
+    function getPassword() {
+      let pw = sessionStorage.getItem("fa_pw");
+      if (!pw) {
+        pw = prompt("Upload password:");
+        if (pw) sessionStorage.setItem("fa_pw", pw);
+      }
+      return pw;
+    }
 
-    folderInput.addEventListener("change", (e) => {
-      handleFiles(Array.from(e.target.files), true);
-      folderInput.value = "";
-    });
+    async function uploadToCloud(name, blob, meta) {
+      const pw = getPassword();
+      if (!pw) throw new Error("no password");
+      const res = await fetch(API + "/file/" + encodeURIComponent(name), {
+        method: "PUT",
+        headers: {
+          "X-Password": pw,
+          "X-Meta": encodeURIComponent(JSON.stringify(meta)),
+          "Content-Type": blob.type || "application/octet-stream"
+        },
+        body: blob
+      });
+      if (res.status === 401) { sessionStorage.removeItem("fa_pw"); throw new Error("wrong password"); }
+      if (!res.ok) throw new Error("upload failed (" + res.status + ")");
+    }
+
+    // ---------- events ----------
+    fileInput.addEventListener("change", (e) => { handleFiles(Array.from(e.target.files), false); fileInput.value = ""; });
+    folderInput.addEventListener("change", (e) => { handleFiles(Array.from(e.target.files), true); folderInput.value = ""; });
+
+    ["dragenter", "dragover"].forEach((ev) => dropZone.addEventListener(ev, (e) => { e.preventDefault(); dropZone.classList.add("drag"); }));
+    ["dragleave", "drop"].forEach((ev) => dropZone.addEventListener(ev, (e) => { e.preventDefault(); dropZone.classList.remove("drag"); }));
+    dropZone.addEventListener("drop", (e) => { handleFiles(Array.from(e.dataTransfer.files), false); });
 
     tabsContainer.addEventListener("click", (e) => {
       const btn = e.target.closest(".tab-btn");
@@ -439,11 +204,14 @@
       render();
     });
 
-    searchInput.addEventListener("input", (e) => {
-      searchQuery = e.target.value.trim();
-      render();
+    searchInput.addEventListener("input", (e) => { searchQuery = e.target.value.trim(); render(); });
+
+    fileListEl.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-download]");
+      if (btn) downloadByName(btn.dataset.download);
     });
 
+    // ---------- categories ----------
     function getCategory(filename) {
       const parts = filename.toLowerCase().split(".");
       const ext = parts.length > 1 ? parts.pop() : "";
@@ -455,9 +223,7 @@
     }
 
     function applyInspectionRules(filenames, defaultCategory) {
-      let hasDll = false;
-      let exeCount = 0;
-      let htmlCount = 0;
+      let hasDll = false, exeCount = 0, htmlCount = 0;
       filenames.forEach((name) => {
         const { category } = getCategory(name);
         if (category === "dll") hasDll = true;
@@ -471,114 +237,66 @@
       return defaultCategory;
     }
 
-    async function fileToBase64(file) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-    }
-
+    // ---------- upload ----------
     async function handleFiles(files, isFolderUpload) {
       if (!files.length) return;
-      uploadHintEl.textContent = "UPLOADING & AUTO-SAVING TO CLOUD...";
-      const nowStr = new Date().toLocaleDateString() + " " + new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      const jobs = [];
 
       if (isFolderUpload && files[0].webkitRelativePath) {
         const folderName = files[0].webkitRelativePath.split("/")[0];
-        const totalSize = files.reduce((acc, f) => acc + f.size, 0);
-        const inspectedCategory = applyInspectionRules(files.map((f) => f.name), "folder");
-
-        let folderBase64 = null;
-        if (window.JSZip) {
-          const zip = new JSZip();
-          files.forEach((f) => zip.file(f.webkitRelativePath || f.name, f));
-          const blob = await zip.generateAsync({ type: "blob" });
-          folderBase64 = await fileToBase64(blob);
+        const category = applyInspectionRules(files.map((f) => f.name), "folder");
+        uploadHintEl.textContent = "ZIPPING FOLDER...";
+        const zip = new JSZip();
+        files.forEach((f) => zip.file(f.webkitRelativePath || f.name, f));
+        const blob = await zip.generateAsync({ type: "blob" });
+        jobs.push({ name: folderName + ".zip", blob, meta: { category, ext: "DIR", isFolder: true, fileCount: files.length } });
+      } else {
+        for (const file of files) {
+          let { category, ext } = getCategory(file.name);
+          if (ext === "zip") {
+            try {
+              const zip = await JSZip.loadAsync(file);
+              const inner = Object.keys(zip.files).filter((p) => !zip.files[p].dir);
+              category = applyInspectionRules(inner, "zip");
+            } catch (e) {}
+          }
+          jobs.push({ name: file.name, blob: file, meta: { category, ext, isFolder: false } });
         }
-
-        storedItems.unshift({
-          id: crypto.randomUUID(),
-          name: folderName + (folderBase64 ? ".zip" : ""),
-          size: folderBase64 ? Math.round(folderBase64.length * 0.75) : totalSize,
-          category: inspectedCategory,
-          ext: "DIR",
-          isFolder: true,
-          fileCount: files.length,
-          dataUrl: folderBase64,
-          uploadedAt: nowStr,
-          timestamp: Date.now()
-        });
       }
 
-      for (const file of files) {
-        let { category, ext } = getCategory(file.name);
-        if (ext === "zip" && window.JSZip) {
-          try {
-            const zip = await JSZip.loadAsync(file);
-            const innerNames = Object.keys(zip.files).filter((path) => !zip.files[path].dir);
-            category = applyInspectionRules(innerNames, "zip");
-          } catch(e) {}
+      try {
+        for (let i = 0; i < jobs.length; i++) {
+          uploadHintEl.textContent = "UPLOADING " + (i + 1) + "/" + jobs.length + ": " + jobs[i].name;
+          await uploadToCloud(jobs[i].name, jobs[i].blob, jobs[i].meta);
         }
-
-        const base64Data = await fileToBase64(file);
-        storedItems.unshift({
-          id: crypto.randomUUID(),
-          name: file.name,
-          size: file.size,
-          category,
-          ext: ext.toUpperCase(),
-          isFolder: false,
-          dataUrl: base64Data,
-          uploadedAt: nowStr,
-          timestamp: Date.now()
-        });
+        uploadHintEl.textContent = "DONE. SAVED ONLINE.";
+      } catch (e) {
+        uploadHintEl.textContent = "ERROR: " + e.message;
       }
-
-      uploadHintEl.textContent = "Drop files, zips, or folders. Everything auto-saves and syncs across browsers instantly.";
-      await saveCloudArchive();
+      await loadCloudArchive();
+      setTimeout(() => { uploadHintEl.textContent = IDLE_HINT; }, 4000);
     }
 
-    function computeSearchDistance(itemName, query) {
-      const name = itemName.toLowerCase();
-      const q = query.toLowerCase();
-      if (name === q) return 0;
-      if (name.startsWith(q)) return 1;
-      const subIndex = name.indexOf(q);
-      if (subIndex !== -1) return 10 + subIndex;
-      return 50 + Math.abs(name.length - q.length);
-    }
-
-    function downloadItem(id) {
-      const item = storedItems.find((i) => i.id === id);
-      if (!item || !item.dataUrl) return;
-
+    // ---------- download ----------
+    function downloadByName(name) {
+      const item = storedItems.find((i) => i.name === name) || downloadHistory.find((h) => h.name === name);
       const a = document.createElement("a");
-      a.href = item.dataUrl;
-      a.download = item.name;
+      a.href = API + "/file/" + encodeURIComponent(name);
+      a.download = name;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
 
-      downloadHistory.unshift({
-        id: crypto.randomUUID(),
-        sourceId: item.id,
-        name: item.name,
-        size: item.size,
-        category: item.category,
-        ext: item.ext,
-        isFolder: item.isFolder,
-        downloadedAt: new Date().toLocaleDateString() + " " + new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-      });
-      localStorage.setItem("fa_downloads", JSON.stringify(downloadHistory));
-      updateCounts();
-      if (activeTab === "downloads") render();
-    }
-
-    function redownloadFromHistory(historyId) {
-      const hist = downloadHistory.find((h) => h.id === historyId);
-      if (hist) downloadItem(hist.sourceId);
+      if (item) {
+        downloadHistory.unshift({
+          id: crypto.randomUUID(), name: item.name, size: item.size, category: item.category, ext: item.ext,
+          isFolder: item.isFolder, fileCount: item.fileCount,
+          downloadedAt: new Date().toLocaleDateString() + " " + new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+        });
+        localStorage.setItem("fa_downloads", JSON.stringify(downloadHistory));
+        updateCounts();
+        if (activeTab === "downloads") render();
+      }
     }
 
     function clearDownloadHistory() {
@@ -588,57 +306,67 @@
       render();
     }
 
+    // ---------- ui ----------
+    function computeSearchDistance(itemName, query) {
+      const name = itemName.toLowerCase(), q = query.toLowerCase();
+      if (name === q) return 0;
+      if (name.startsWith(q)) return 1;
+      const subIndex = name.indexOf(q);
+      if (subIndex !== -1) return 10 + subIndex;
+      return 50 + Math.abs(name.length - q.length);
+    }
+
     function formatBytes(bytes) {
-      if (!bytes || bytes === 0) return "0 B";
+      if (!bytes) return "0 B";
       const k = 1024, sizes = ["B", "KB", "MB", "GB"];
       const i = Math.floor(Math.log(bytes) / Math.log(k));
       return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
     }
 
     function updateCounts() {
+      const c = (cat) => storedItems.filter((i) => i.category === cat).length;
       document.getElementById("count-all").textContent = storedItems.length;
-      document.getElementById("count-html").textContent = storedItems.filter((i) => i.category === "html").length;
-      document.getElementById("count-runnable").textContent = storedItems.filter((i) => i.category === "runnable").length;
-      document.getElementById("count-dll").textContent = storedItems.filter((i) => i.category === "dll").length;
-      document.getElementById("count-zip").textContent = storedItems.filter((i) => i.category === "zip").length;
-      document.getElementById("count-folder").textContent = storedItems.filter((i) => i.category === "folder" || i.category === "other").length;
+      document.getElementById("count-html").textContent = c("html");
+      document.getElementById("count-runnable").textContent = c("runnable");
+      document.getElementById("count-dll").textContent = c("dll");
+      document.getElementById("count-zip").textContent = c("zip");
+      document.getElementById("count-folder").textContent = c("folder") + c("other");
       document.getElementById("count-downloads").textContent = downloadHistory.length;
     }
 
     function render() {
       clearDownloadsBtn.style.display = activeTab === "downloads" ? "inline-flex" : "none";
-      let itemsToShow = activeTab === "downloads" ? [...downloadHistory] : (activeTab === "all" ? [...storedItems] : storedItems.filter((item) => activeTab === "folder" ? (item.category === "folder" || item.category === "other") : item.category === activeTab));
+      let items = activeTab === "downloads" ? [...downloadHistory]
+        : activeTab === "all" ? [...storedItems]
+        : storedItems.filter((i) => activeTab === "folder" ? (i.category === "folder" || i.category === "other") : i.category === activeTab);
 
       if (searchQuery) {
-        itemsToShow = itemsToShow.map((item) => ({ ...item, _distance: computeSearchDistance(item.name, searchQuery) })).sort((a, b) => a._distance - b._distance);
+        items = items.map((i) => ({ ...i, _distance: computeSearchDistance(i.name, searchQuery) })).sort((a, b) => a._distance - b._distance);
       }
 
-      if (itemsToShow.length === 0) {
+      if (items.length === 0) {
         fileListEl.innerHTML = `<div class="empty-state"><h3>ARCHIVE EMPTY</h3><p>NO FILES STORED IN THIS CATEGORY.</p></div>`;
         return;
       }
 
-      fileListEl.innerHTML = itemsToShow.map((item) => {
-        const isHistory = activeTab === "downloads";
-        const rankLabel = searchQuery ? `<span class="match-score">${item._distance === 0 ? "EXACT" : "NEAR"}</span>` : "";
+      fileListEl.innerHTML = items.map((item) => {
+        const rank = searchQuery ? `<span class="match-score">${item._distance === 0 ? "EXACT" : "NEAR"}</span>` : "";
+        const label = activeTab === "downloads" ? "DOWNLOAD AGAIN" : "DOWNLOAD";
         return `
           <article class="file-card">
             <div class="file-header">
-              <div class="file-type-box">${item.ext}</div>
+              <div class="file-type-box">${esc(item.ext)}</div>
               <div class="file-info">
-                <div class="file-name" title="${item.name}">${item.name}</div>
-                <div class="file-meta"><span>${item.isFolder ? item.fileCount + ' FILES / ' : ''}${formatBytes(item.size)}</span>${rankLabel}</div>
+                <div class="file-name" title="${esc(item.name)}">${esc(item.name)}</div>
+                <div class="file-meta"><span>${item.isFolder ? esc(item.fileCount) + " FILES / " : ""}${formatBytes(item.size)}</span>${rank}</div>
               </div>
             </div>
-            <div>
-              ${isHistory ? `<button class="btn btn-sm" onclick="redownloadFromHistory('${item.id}')">DOWNLOAD AGAIN</button>` : `<button class="btn btn-sm" onclick="downloadItem('${item.id}')">DOWNLOAD</button>`}
-            </div>
-          </article>
-        `;
+            <div><button class="btn btn-sm" data-download="${esc(item.name)}">${label}</button></div>
+          </article>`;
       }).join("");
     }
 
-    initCloudStorage();
+    loadCloudArchive();
   </script>
 </body>
 </html>
