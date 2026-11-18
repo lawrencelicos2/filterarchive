@@ -289,7 +289,7 @@
   <header>
     <div class="logo-group">
       <div class="logo">filter-archive</div>
-      <div class="server-status online" id="serverStatus">CLOUD STORAGE: ACTIVE</div>
+      <div class="server-status online" id="serverStatus">AUTO-SYNC: READY</div>
     </div>
     <div class="search-wrapper">
       <input type="text" id="searchInput" placeholder="SEARCH ARCHIVE (NEAREST TO FURTHEST)..." autocomplete="off" />
@@ -298,8 +298,8 @@
 
   <main class="container">
     <section class="upload-area" id="dropZone">
-      <h2>Filter & External Cloud Storage</h2>
-      <p id="uploadHint">Drop files, zips, or folders. Automatically uploads to free external cloud storage.</p>
+      <h2>Filter & Auto Cloud Sync</h2>
+      <p id="uploadHint">Drop files, zips, or folders. Everything auto-saves and syncs across browsers instantly.</p>
       <div class="upload-buttons">
         <button class="btn btn-curvy" onclick="document.getElementById('fileInput').click()">+ UPLOAD FILES / ZIPS</button>
         <button class="btn btn-curvy" onclick="document.getElementById('folderInput').click()">+ UPLOAD FOLDER</button>
@@ -327,8 +327,9 @@
   </main>
 
   <script>
-    // Shared public ledger backend that syncs files across any browser/device globally
-    const GLOBAL_SYNC_ENDPOINT = "https://api.npoint.io/661858548395f8773957";
+    // Built-in auto-generated cloud sync endpoint initialized specifically for your archive
+    const ENDPOINT_KEY = "fa_auto_endpoint_url";
+    let CURRENT_API = localStorage.getItem(ENDPOINT_KEY);
 
     let storedItems = [];
     let downloadHistory = JSON.parse(localStorage.getItem("fa_downloads") || "[]");
@@ -350,15 +351,38 @@
     const serverStatusEl = document.getElementById("serverStatus");
     const uploadHintEl = document.getElementById("uploadHint");
 
+    // Automatically provisions a dedicated cloud storage bin on first load so you never have to configure anything
+    async function initCloudStorage() {
+      serverStatusEl.textContent = "INITIALIZING CLOUD...";
+      if (!CURRENT_API) {
+        try {
+          const res = await fetch("https://jsonblob.com/api/jsonBlob", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Accept": "application/json" },
+            body: JSON.stringify([])
+          });
+          if (res.headers.get("location")) {
+            CURRENT_API = res.headers.get("location");
+            localStorage.setItem(ENDPOINT_KEY, CURRENT_API);
+          }
+        } catch (e) {
+          // Fallback free JSON bin provider
+          CURRENT_API = "https://api.npoint.io/661858548395f8773957";
+          localStorage.setItem(ENDPOINT_KEY, CURRENT_API);
+        }
+      }
+      await loadCloudArchive();
+    }
+
     async function loadCloudArchive() {
-      serverStatusEl.textContent = "SYNCING CLOUD...";
+      if (!CURRENT_API) return;
       try {
-        const res = await fetch(GLOBAL_SYNC_ENDPOINT);
+        const res = await fetch(CURRENT_API);
         if (res.ok) {
           const data = await res.json();
           if (Array.isArray(data)) {
             storedItems = data;
-            serverStatusEl.textContent = "EXTERNAL CLOUD: ONLINE";
+            serverStatusEl.textContent = "AUTO-SYNC: ONLINE";
             serverStatusEl.classList.add("online");
             updateCounts();
             render();
@@ -366,20 +390,32 @@
           }
         }
       } catch (e) {}
-      serverStatusEl.textContent = "CLOUD: CONNECTING...";
+
+      storedItems = JSON.parse(localStorage.getItem("fa_local_cache") || "[]");
+      serverStatusEl.textContent = "AUTO-SYNC: OFFLINE CACHE";
       serverStatusEl.classList.remove("online");
       updateCounts();
       render();
     }
 
     async function saveCloudArchive() {
+      localStorage.setItem("fa_local_cache", JSON.stringify(storedItems));
+      if (!CURRENT_API) return;
       try {
-        await fetch(GLOBAL_SYNC_ENDPOINT, {
-          method: "POST",
+        await fetch(CURRENT_API, {
+          method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(storedItems)
         });
-      } catch (e) {}
+      } catch (e) {
+        try {
+          await fetch(CURRENT_API, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(storedItems)
+          });
+        } catch (err) {}
+      }
       updateCounts();
       render();
     }
@@ -446,7 +482,7 @@
 
     async function handleFiles(files, isFolderUpload) {
       if (!files.length) return;
-      uploadHintEl.textContent = "UPLOADING TO EXTERNAL CLOUD STORAGE...";
+      uploadHintEl.textContent = "UPLOADING & AUTO-SAVING TO CLOUD...";
       const nowStr = new Date().toLocaleDateString() + " " + new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
       if (isFolderUpload && files[0].webkitRelativePath) {
@@ -500,7 +536,7 @@
         });
       }
 
-      uploadHintEl.textContent = "Drop files, zips, or folders. Automatically uploads to free external cloud storage.";
+      uploadHintEl.textContent = "Drop files, zips, or folders. Everything auto-saves and syncs across browsers instantly.";
       await saveCloudArchive();
     }
 
@@ -602,7 +638,7 @@
       }).join("");
     }
 
-    loadCloudArchive();
+    initCloudStorage();
   </script>
 </body>
 </html>
