@@ -149,6 +149,7 @@
     const PART_MB = 50;  // files are uploaded in 50 MB parts
 
     let storedItems = [];
+    const linkCache = {};
     let downloadHistory = JSON.parse(localStorage.getItem("fa_downloads") || "[]");
     let activeTab = "all";
     let searchQuery = "";
@@ -257,6 +258,13 @@
           id: f.id, name: f.name, size: f.size, category: f.category, ext: String(f.ext).toUpperCase(),
           isFolder: f.isFolder, fileCount: f.fileCount, uploadedAt: fmtDate(f.uploaded), timestamp: f.uploaded,
           link: f.link || "", isLink: !!f.isLink || f.category === "link"
+        }));
+        await Promise.all(storedItems.filter((i) => i.isLink && !i.link).map(async (i) => {
+          if (linkCache[i.id] === undefined) {
+            try { const r = await fetch(API + "/file/" + i.id); linkCache[i.id] = r.ok ? (await r.text()).trim().slice(0, 2000) : ""; }
+            catch (e) { linkCache[i.id] = ""; }
+          }
+          i.link = linkCache[i.id];
         }));
         serverStatusEl.textContent = "CLOUD: ONLINE";
         serverStatusEl.classList.add("online");
@@ -396,14 +404,11 @@
         const name = nameEl.value.trim().slice(0, 100) || linkHost(link) || "link";
         ok.disabled = true; err.textContent = "Saving...";
         try {
-          const id = Array.from(crypto.getRandomValues(new Uint8Array(6))).map((b) => b.toString(16).padStart(2, "0")).join("");
-          const res = await fetch(API + "/finish/" + id, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name, size: 0, assets: [], category: "link", ext: "LINK", isFolder: false, isLink: true, link })
-          });
-          if (!res.ok) throw new Error(await res.text() || ("HTTP " + res.status));
+          // saved as a tiny text file that holds the link, so the storage Worker accepts it like any other file
+          const blob = new Blob([link], { type: "text/plain" });
+          await uploadJob({ name, blob, meta: { category: "link", ext: "LINK", isFolder: false, isLink: true, link } }, 1, 1);
           dlg.close();
+          uploadHintEl.textContent = IDLE_HINT;
           await loadCloudArchive();
         } catch (e) {
           err.textContent = "Could not save: " + e.message;
@@ -491,7 +496,7 @@
         const linkMeta = link ? `<span title="${esc(link.slice(0, 200))}">${linkOnly ? "" : "LINK: "}${esc(host)}</span>` : "";
         const linkBtn = link ? `<a class="btn btn-sm" href="${esc(link)}" target="_blank" rel="noopener noreferrer">${linkOnly ? "OPEN LINK" : "LINK"}</a>` : "";
         const sizeText = linkOnly ? "LINK ONLY" : (item.isFolder ? esc(item.fileCount) + " FILES / " : "") + formatBytes(item.size);
-        const mainBtn = linkOnly ? "" : `<button class="btn btn-sm" data-download="${esc(key)}">${label}</button>`;
+        const mainBtn = (linkOnly && link) ? "" : `<button class="btn btn-sm" data-download="${esc(key)}">${label}</button>`;
         return `
           <article class="file-card">
             <div class="file-header">
