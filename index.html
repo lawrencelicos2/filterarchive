@@ -38,8 +38,11 @@
     .btn { padding: 0.55rem 1.1rem; border: var(--border); border-radius: var(--radius-sharp); background-color: var(--bg);
       color: var(--fg); font-size: 0.8rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem; }
     .btn:hover { background-color: var(--fg); color: var(--bg); }
+    a.btn { text-decoration: none; }
     .btn-curvy { border-radius: var(--radius-curvy); }
     .btn-sm { padding: 0.45rem 0.75rem; font-size: 0.78rem; width: 100%; justify-content: center; border-radius: var(--radius-curvy); }
+    .card-actions { display: flex; gap: 0.5rem; }
+    .card-actions .btn-sm { flex: 1; }
     .tabs { display: flex; gap: 0.5rem; border-bottom: var(--border); padding-bottom: 0.75rem; margin-bottom: 1.25rem; overflow-x: auto; }
     .tab-btn { background-color: var(--bg); border: var(--border-dim); border-radius: var(--radius-curvy); color: var(--muted);
       padding: 0.45rem 0.85rem; font-size: 0.8rem; cursor: pointer; white-space: nowrap; display: flex; align-items: center; gap: 0.45rem; }
@@ -58,6 +61,17 @@
     .empty-state { grid-column: 1 / -1; text-align: center; padding: 3rem 1rem; border: var(--border-dim); border-radius: var(--radius-curvy); color: var(--muted); }
     input[type="file"] { display: none; }
     .upload-area.drag { background-color: #222; }
+
+    dialog { background: var(--bg); color: var(--fg); border: var(--border); border-radius: var(--radius-curvy);
+      padding: 1.5rem; width: min(480px, 92vw); margin: auto; }
+    dialog::backdrop { background: rgba(0, 0, 0, 0.7); }
+    dialog h3 { font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.6rem; }
+    dialog p { color: var(--muted); font-size: 0.8rem; margin-bottom: 1rem; line-height: 1.4; }
+    dialog input[type="text"] { width: 100%; padding: 0.55rem 0.95rem; border: var(--border); border-radius: var(--radius-curvy);
+      background: var(--bg); color: var(--fg); font-size: 0.85rem; outline: none; }
+    dialog input[type="text"]::placeholder { color: var(--muted); }
+    .dialog-error { color: var(--fg); font-size: 0.75rem; min-height: 1.1rem; margin: 0.5rem 0; }
+    .dialog-buttons { display: flex; justify-content: flex-end; gap: 0.6rem; }
   </style>
 </head>
 <body>
@@ -91,6 +105,7 @@
       <button class="tab-btn" data-tab="dll">DLL <span class="badge" id="count-dll">0</span></button>
       <button class="tab-btn" data-tab="zip">ZIPS & ARCHIVES <span class="badge" id="count-zip">0</span></button>
       <button class="tab-btn" data-tab="folder">FOLDERS <span class="badge" id="count-folder">0</span></button>
+      <button class="tab-btn" data-tab="links">LINKS <span class="badge" id="count-links">0</span></button>
       <button class="tab-btn" data-tab="downloads">DOWNLOADS <span class="badge" id="count-downloads">0</span></button>
     </nav>
 
@@ -101,6 +116,17 @@
 
     <section class="file-list" id="fileList"></section>
   </main>
+
+  <dialog id="linkDialog">
+    <h3>Upload download link (optional)</h3>
+    <p id="linkDialogInfo"></p>
+    <input type="text" id="linkInput" placeholder="https://..." autocomplete="off" />
+    <div class="dialog-error" id="linkError"></div>
+    <div class="dialog-buttons">
+      <button class="btn btn-curvy" id="linkCancel">CANCEL</button>
+      <button class="btn btn-curvy" id="linkOk">UPLOAD</button>
+    </div>
+  </dialog>
 
   <script>
     // >>> PUT YOUR CLOUDFLARE WORKER URL HERE (no slash at the end) <<<
@@ -137,6 +163,45 @@
       return d.toLocaleDateString() + " " + d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
     }
 
+    // ---------- links ----------
+    // Returns a clean http/https URL, or "" if it is empty or not allowed (blocks javascript:, data:, etc.)
+    function safeLink(s) {
+      if (!s) return "";
+      s = String(s).trim();
+      if (!s || s.length > 500) return "";
+      if (!/^[a-z][a-z0-9+.-]*:/i.test(s)) s = "https://" + s;
+      try {
+        const u = new URL(s);
+        if (u.protocol !== "http:" && u.protocol !== "https:") return "";
+        return u.href;
+      } catch (e) { return ""; }
+    }
+    function askLink(count, isFolder) {
+      return new Promise((resolve) => {
+        const dlg = document.getElementById("linkDialog");
+        const input = document.getElementById("linkInput");
+        const err = document.getElementById("linkError");
+        document.getElementById("linkDialogInfo").textContent =
+          (isFolder ? "Uploading 1 folder. " : "Uploading " + count + (count === 1 ? " file. " : " files. ")) +
+          "If you also have an online download link for it, add it here and a LINK button will show next to it. Leave it empty to skip.";
+        input.value = ""; err.textContent = "";
+        const finish = (v) => { dlg.close(); resolve(v); };
+        const ok = () => {
+          const v = input.value.trim();
+          if (!v) return finish("");
+          const l = safeLink(v);
+          if (!l) { err.textContent = "That is not a valid link. It must be a web address (http or https)."; return; }
+          finish(l);
+        };
+        document.getElementById("linkOk").onclick = ok;
+        document.getElementById("linkCancel").onclick = () => finish(null);
+        input.onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); ok(); } };
+        dlg.oncancel = (e) => { e.preventDefault(); finish(null); };
+        dlg.showModal();
+        input.focus();
+      });
+    }
+
     // ---------- categories ----------
     function getCategory(filename) {
       const parts = filename.toLowerCase().split(".");
@@ -170,7 +235,8 @@
         const data = await res.json();
         storedItems = data.map((f) => ({
           id: f.id, name: f.name, size: f.size, category: f.category, ext: String(f.ext).toUpperCase(),
-          isFolder: f.isFolder, fileCount: f.fileCount, uploadedAt: fmtDate(f.uploaded), timestamp: f.uploaded
+          isFolder: f.isFolder, fileCount: f.fileCount, uploadedAt: fmtDate(f.uploaded), timestamp: f.uploaded,
+          link: f.link || ""
         }));
         serverStatusEl.textContent = "CLOUD: ONLINE";
         serverStatusEl.classList.add("online");
@@ -234,6 +300,12 @@
 
     async function handleFiles(files, isFolderUpload) {
       if (!files.length) return;
+
+      // ask for the optional download link first (null = the user cancelled the upload)
+      const link = await askLink(files.length, isFolderUpload && !!files[0].webkitRelativePath);
+      if (link === null) return;
+      const extra = link ? { link } : {};
+
       const jobs = [];
 
       try {
@@ -244,7 +316,7 @@
           const zip = new JSZip();
           files.forEach((f) => zip.file(f.webkitRelativePath || f.name, f));
           const blob = await zip.generateAsync({ type: "blob" });
-          jobs.push({ name: folderName + ".zip", blob, meta: { category, ext: "DIR", isFolder: true, fileCount: files.length } });
+          jobs.push({ name: folderName + ".zip", blob, meta: { category, ext: "DIR", isFolder: true, fileCount: files.length, ...extra } });
         } else {
           for (const file of files) {
             let { category, ext } = getCategory(file.name);
@@ -255,7 +327,7 @@
                 category = applyInspectionRules(inner, "zip");
               } catch (e) {}
             }
-            jobs.push({ name: file.name, blob: file, meta: { category, ext, isFolder: false } });
+            jobs.push({ name: file.name, blob: file, meta: { category, ext, isFolder: false, ...extra } });
           }
         }
 
@@ -338,35 +410,43 @@
       document.getElementById("count-dll").textContent = c("dll");
       document.getElementById("count-zip").textContent = c("zip");
       document.getElementById("count-folder").textContent = c("folder") + c("other");
+      document.getElementById("count-links").textContent = storedItems.filter((i) => safeLink(i.link)).length;
       document.getElementById("count-downloads").textContent = downloadHistory.length;
     }
     function render() {
       clearDownloadsBtn.style.display = activeTab === "downloads" ? "inline-flex" : "none";
       let items = activeTab === "downloads" ? [...downloadHistory]
         : activeTab === "all" ? [...storedItems]
+        : activeTab === "links" ? storedItems.filter((i) => safeLink(i.link))
         : storedItems.filter((i) => activeTab === "folder" ? (i.category === "folder" || i.category === "other") : i.category === activeTab);
 
       if (searchQuery) {
         items = items.map((i) => ({ ...i, _distance: computeSearchDistance(i.name, searchQuery) })).sort((a, b) => a._distance - b._distance);
       }
       if (items.length === 0) {
-        fileListEl.innerHTML = `<div class="empty-state"><h3>ARCHIVE EMPTY</h3><p>NO FILES STORED IN THIS CATEGORY.</p></div>`;
+        fileListEl.innerHTML = `<div class="empty-state"><h3>${activeTab === "links" ? "NO LINKS YET" : "ARCHIVE EMPTY"}</h3><p>${activeTab === "links" ? "NO FILES HAVE A DOWNLOAD LINK." : "NO FILES STORED IN THIS CATEGORY."}</p></div>`;
         return;
       }
       fileListEl.innerHTML = items.map((item) => {
         const rank = searchQuery ? `<span class="match-score">${item._distance === 0 ? "EXACT" : "NEAR"}</span>` : "";
         const label = activeTab === "downloads" ? "DOWNLOAD AGAIN" : "DOWNLOAD";
         const key = activeTab === "downloads" ? item.sourceId : item.id;
+        const rawLink = activeTab === "downloads" ? (storedItems.find((i) => i.id === item.sourceId) || {}).link : item.link;
+        const link = safeLink(rawLink);
+        let host = "";
+        if (link) { try { host = new URL(link).hostname; } catch (e) {} }
+        const linkMeta = link ? `<span title="${esc(link)}">LINK: ${esc(host)}</span>` : "";
+        const linkBtn = link ? `<a class="btn btn-sm" href="${esc(link)}" target="_blank" rel="noopener noreferrer">LINK</a>` : "";
         return `
           <article class="file-card">
             <div class="file-header">
               <div class="file-type-box">${esc(item.ext)}</div>
               <div class="file-info">
                 <div class="file-name" title="${esc(item.name)}">${esc(item.name)}</div>
-                <div class="file-meta"><span>${item.isFolder ? esc(item.fileCount) + " FILES / " : ""}${formatBytes(item.size)}</span>${rank}</div>
+                <div class="file-meta"><span>${item.isFolder ? esc(item.fileCount) + " FILES / " : ""}${formatBytes(item.size)}</span>${linkMeta}${rank}</div>
               </div>
             </div>
-            <div><button class="btn btn-sm" data-download="${esc(key)}">${label}</button></div>
+            <div class="card-actions"><button class="btn btn-sm" data-download="${esc(key)}">${label}</button>${linkBtn}</div>
           </article>`;
       }).join("");
     }
