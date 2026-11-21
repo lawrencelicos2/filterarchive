@@ -70,6 +70,7 @@
     dialog input[type="text"] { width: 100%; padding: 0.55rem 0.95rem; border: var(--border); border-radius: var(--radius-curvy);
       background: var(--bg); color: var(--fg); font-size: 0.85rem; outline: none; }
     dialog input[type="text"]::placeholder { color: var(--muted); }
+    .dialog-field { margin-bottom: 0.6rem; }
     .dialog-error { color: var(--fg); font-size: 0.75rem; min-height: 1.1rem; margin: 0.5rem 0; }
     .dialog-buttons { display: flex; justify-content: flex-end; gap: 0.6rem; }
   </style>
@@ -93,6 +94,7 @@
       <div class="upload-buttons">
         <button class="btn btn-curvy" onclick="document.getElementById('fileInput').click()">+ UPLOAD FILES / ZIPS</button>
         <button class="btn btn-curvy" onclick="document.getElementById('folderInput').click()">+ UPLOAD FOLDER</button>
+        <button class="btn btn-curvy" id="addLinkBtn">+ ADD LINK</button>
       </div>
       <input type="file" id="fileInput" multiple />
       <input type="file" id="folderInput" webkitdirectory directory multiple />
@@ -125,6 +127,18 @@
     <div class="dialog-buttons">
       <button class="btn btn-curvy" id="linkCancel">CANCEL</button>
       <button class="btn btn-curvy" id="linkOk">UPLOAD</button>
+    </div>
+  </dialog>
+
+  <dialog id="addLinkDialog">
+    <h3>Add a link (no file)</h3>
+    <p>This adds a button that opens your link. Anyone who visits the archive can use it.</p>
+    <div class="dialog-field"><input type="text" id="alName" placeholder="NAME (e.g. Game v2 on Mega)" maxlength="100" autocomplete="off" /></div>
+    <div class="dialog-field"><input type="text" id="alLink" placeholder="LINK (https://, blob:, magnet:, anything)" autocomplete="off" /></div>
+    <div class="dialog-error" id="alError"></div>
+    <div class="dialog-buttons">
+      <button class="btn btn-curvy" id="alCancel">CANCEL</button>
+      <button class="btn btn-curvy" id="alOk">ADD</button>
     </div>
   </dialog>
 
@@ -164,17 +178,23 @@
     }
 
     // ---------- links ----------
-    // Returns a clean http/https URL, or "" if it is empty or not allowed (blocks javascript:, data:, etc.)
+    // Accepts almost any link (http, https, blob, data, magnet, ftp, steam://, ...) and adds https:// to bare domains.
+    // The only thing blocked is javascript:/vbscript:, because those would run code inside this site for every visitor.
     function safeLink(s) {
       if (!s) return "";
       s = String(s).trim();
-      if (!s || s.length > 500) return "";
-      if (!/^[a-z][a-z0-9+.-]*:/i.test(s)) s = "https://" + s;
+      if (!s || s.length > 2000) return "";
+      let u;
       try {
-        const u = new URL(s);
-        if (u.protocol !== "http:" && u.protocol !== "https:") return "";
-        return u.href;
-      } catch (e) { return ""; }
+        u = /^[\w-]+(\.[\w-]+)+(:\d+)?([\/?#]|$)/.test(s) ? new URL("https://" + s) : new URL(s);
+      } catch (e) {
+        try { u = new URL("https://" + s); } catch (e2) { return ""; }
+      }
+      if (u.protocol === "javascript:" || u.protocol === "vbscript:") return "";
+      return u.href;
+    }
+    function linkHost(l) {
+      try { const u = new URL(l); return u.hostname || u.protocol; } catch (e) { return ""; }
     }
     function askLink(count, isFolder) {
       return new Promise((resolve) => {
@@ -190,7 +210,7 @@
           const v = input.value.trim();
           if (!v) return finish("");
           const l = safeLink(v);
-          if (!l) { err.textContent = "That is not a valid link. It must be a web address (http or https)."; return; }
+          if (!l) { err.textContent = "That does not look like a link (javascript: links are not allowed)."; return; }
           finish(l);
         };
         document.getElementById("linkOk").onclick = ok;
@@ -236,7 +256,7 @@
         storedItems = data.map((f) => ({
           id: f.id, name: f.name, size: f.size, category: f.category, ext: String(f.ext).toUpperCase(),
           isFolder: f.isFolder, fileCount: f.fileCount, uploadedAt: fmtDate(f.uploaded), timestamp: f.uploaded,
-          link: f.link || ""
+          link: f.link || "", isLink: !!f.isLink || f.category === "link"
         }));
         serverStatusEl.textContent = "CLOUD: ONLINE";
         serverStatusEl.classList.add("online");
@@ -364,6 +384,39 @@
       if (btn) downloadItem(btn.dataset.download);
     });
 
+    // ---------- add a link without a file ----------
+    document.getElementById("addLinkBtn").addEventListener("click", () => {
+      const dlg = document.getElementById("addLinkDialog");
+      const nameEl = document.getElementById("alName"), linkEl = document.getElementById("alLink"), err = document.getElementById("alError");
+      nameEl.value = ""; linkEl.value = ""; err.textContent = "";
+      const ok = document.getElementById("alOk");
+      const submit = async () => {
+        const link = safeLink(linkEl.value);
+        if (!link) { err.textContent = "Enter a link (javascript: links are not allowed)."; return; }
+        const name = nameEl.value.trim().slice(0, 100) || linkHost(link) || "link";
+        ok.disabled = true; err.textContent = "Saving...";
+        try {
+          const id = Array.from(crypto.getRandomValues(new Uint8Array(6))).map((b) => b.toString(16).padStart(2, "0")).join("");
+          const res = await fetch(API + "/finish/" + id, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name, size: 0, assets: [], category: "link", ext: "LINK", isFolder: false, isLink: true, link })
+          });
+          if (!res.ok) throw new Error(await res.text() || ("HTTP " + res.status));
+          dlg.close();
+          await loadCloudArchive();
+        } catch (e) {
+          err.textContent = "Could not save: " + e.message;
+        }
+        ok.disabled = false;
+      };
+      ok.onclick = submit;
+      document.getElementById("alCancel").onclick = () => dlg.close();
+      [nameEl, linkEl].forEach((el) => { el.onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); submit(); } }; });
+      dlg.showModal();
+      nameEl.focus();
+    });
+
     // ---------- download ----------
     function downloadItem(id) {
       const item = storedItems.find((i) => i.id === id);
@@ -433,20 +486,22 @@
         const key = activeTab === "downloads" ? item.sourceId : item.id;
         const rawLink = activeTab === "downloads" ? (storedItems.find((i) => i.id === item.sourceId) || {}).link : item.link;
         const link = safeLink(rawLink);
-        let host = "";
-        if (link) { try { host = new URL(link).hostname; } catch (e) {} }
-        const linkMeta = link ? `<span title="${esc(link)}">LINK: ${esc(host)}</span>` : "";
-        const linkBtn = link ? `<a class="btn btn-sm" href="${esc(link)}" target="_blank" rel="noopener noreferrer">LINK</a>` : "";
+        const host = link ? linkHost(link) : "";
+        const linkOnly = !!item.isLink || item.category === "link";
+        const linkMeta = link ? `<span title="${esc(link.slice(0, 200))}">${linkOnly ? "" : "LINK: "}${esc(host)}</span>` : "";
+        const linkBtn = link ? `<a class="btn btn-sm" href="${esc(link)}" target="_blank" rel="noopener noreferrer">${linkOnly ? "OPEN LINK" : "LINK"}</a>` : "";
+        const sizeText = linkOnly ? "LINK ONLY" : (item.isFolder ? esc(item.fileCount) + " FILES / " : "") + formatBytes(item.size);
+        const mainBtn = linkOnly ? "" : `<button class="btn btn-sm" data-download="${esc(key)}">${label}</button>`;
         return `
           <article class="file-card">
             <div class="file-header">
               <div class="file-type-box">${esc(item.ext)}</div>
               <div class="file-info">
                 <div class="file-name" title="${esc(item.name)}">${esc(item.name)}</div>
-                <div class="file-meta"><span>${item.isFolder ? esc(item.fileCount) + " FILES / " : ""}${formatBytes(item.size)}</span>${linkMeta}${rank}</div>
+                <div class="file-meta"><span>${sizeText}</span>${linkMeta}${rank}</div>
               </div>
             </div>
-            <div class="card-actions"><button class="btn btn-sm" data-download="${esc(key)}">${label}</button>${linkBtn}</div>
+            <div class="card-actions">${mainBtn}${linkBtn}</div>
           </article>`;
       }).join("");
     }
